@@ -4,7 +4,8 @@ A private, durable record of books read.
 
 This project evolved from the [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack) scaffold into a focused book-tracking app with authenticated user shelves.
 
-**Demo:** The root route `/` displays a demo shelf with mock data (in-memory, resets on reload).  
+**Demo:** The root route `/` displays a demo shelf with mock data (in-memory, resets on reload) and links to the 10M-row demo.  
+**10M demo:** `/demo/10m` displays a seeded Postgres shelf with TanStack Virtual, cursor pagination, and indexed title/author search.  
 **User shelves:** Sign up at `/login` to create your own persistent shelf at `/shelf/<username>`.
 
 ---
@@ -76,7 +77,21 @@ pnpm run db:push
 
 This creates all tables (user, session, account, verification, books).
 
-### 5. Start development servers
+### 5. Optional: seed the 10M-row demo
+
+```bash
+pnpm run db:seed:demo10m
+```
+
+Run this after `pnpm run db:start` and `pnpm run db:push`. The script creates/updates the `demo-10m` user and inserts exactly 10,000,000 real Postgres `books` rows in deterministic batches. It is resumable when the demo user has fewer than 10M rows and skips work when the count is already exactly 10M.
+
+Expected local runtime depends heavily on disk and CPU, but plan for tens of minutes. The table plus indexes can require multiple GB of disk; keep at least 10–20GB free for the database volume and index build headroom. To rebuild from scratch, run:
+
+```bash
+SEED_DEMO10M_RESET=1 pnpm run db:seed:demo10m
+```
+
+### 6. Start development servers
 
 ```bash
 pnpm run dev
@@ -90,31 +105,33 @@ pnpm run dev
 
 ## Routes
 
-| Path               | Auth   | Description                                             |
-| ------------------ | ------ | ------------------------------------------------------- |
-| `/`                | Public | Demo shelf with mock data (in-memory, resets on reload) |
-| `/login`           | Public | Sign in / Sign up                                       |
-| `/shelf/$username` | Public | Read a user's shelf; add books if you're the owner      |
+| Path               | Auth   | Description                                              |
+| ------------------ | ------ | -------------------------------------------------------- |
+| `/`                | Public | Lightweight demo shelf with mock data and a 10M demo CTA |
+| `/demo/10m`        | Public | 10M-row Postgres demo with virtualized rendering/search  |
+| `/login`           | Public | Sign in / Sign up                                        |
+| `/shelf/$username` | Public | Read a user's shelf; add books if you're the owner       |
 
 ---
 
 ## Scripts
 
-| Command                | Description                          |
-| ---------------------- | ------------------------------------ |
-| `pnpm run dev`         | Start all applications in dev mode   |
-| `pnpm run build`       | Build all applications               |
-| `pnpm run dev:web`     | Start only the web app               |
-| `pnpm run dev:server`  | Start only the API server            |
-| `pnpm run db:push`     | Push Drizzle schema to PostgreSQL    |
-| `pnpm run db:generate` | Generate Drizzle migrations          |
-| `pnpm run db:migrate`  | Run pending migrations               |
-| `pnpm run db:studio`   | Open Drizzle Studio (GUI)            |
-| `pnpm run db:start`    | Start PostgreSQL via Docker          |
-| `pnpm run db:stop`     | Stop PostgreSQL container            |
-| `pnpm run db:down`     | Stop and remove PostgreSQL container |
-| `pnpm run check`       | Run Oxlint + Oxfmt                   |
-| `pnpm run fix`         | Auto-fix lint and format issues      |
+| Command                    | Description                           |
+| -------------------------- | ------------------------------------- |
+| `pnpm run dev`             | Start all applications in dev mode    |
+| `pnpm run build`           | Build all applications                |
+| `pnpm run dev:web`         | Start only the web app                |
+| `pnpm run dev:server`      | Start only the API server             |
+| `pnpm run db:push`         | Push Drizzle schema to PostgreSQL     |
+| `pnpm run db:generate`     | Generate Drizzle migrations           |
+| `pnpm run db:migrate`      | Run pending migrations                |
+| `pnpm run db:studio`       | Open Drizzle Studio (GUI)             |
+| `pnpm run db:start`        | Start PostgreSQL via Docker           |
+| `pnpm run db:stop`         | Stop PostgreSQL container             |
+| `pnpm run db:down`         | Stop and remove PostgreSQL container  |
+| `pnpm run db:seed:demo10m` | Seed exactly 10M rows for `/demo/10m` |
+| `pnpm run check`           | Run Oxlint + Oxfmt                    |
+| `pnpm run fix`             | Auto-fix lint and format issues       |
 
 ---
 
@@ -126,8 +143,9 @@ pnpm run dev
 │   │   └── src/
 │   │       ├── routes/         # TanStack Router file-based routes
 │   │       │   ├── __root.tsx
-│   │       │   ├── index.tsx   # Demo shelf
+│   │       │   ├── index.tsx   # Lightweight demo shelf
 │   │       │   ├── login.tsx   # Sign in / Sign up
+│   │       │   ├── demo/10m.tsx # 10M row demo shelf
 │   │       │   └── shelf/
 │   │       │       └── $username.tsx  # User's persistent shelf
 │   │       ├── components/
@@ -181,7 +199,8 @@ pnpm run dev
 **Indexes:**
 
 - `(user_id, finished_at)` — primary shelf ordering
-- `(title, author)` — search by title/author
+- `(user_id, finished_at, id)` — stable keyset cursor pagination ordered by `(finished_at, id)`
+- GIN expression index on `to_tsvector('simple', title || ' ' || author)` — full-text title/author search
 
 ---
 
@@ -189,17 +208,17 @@ pnpm run dev
 
 ### ✅ Current
 
-- `bigserial` ID type is sufficient for 10M+ rows
-- `(user_id, finished_at)` composite index keeps per-user shelf queries fast
-- Search uses PostgreSQL `ilike` with a `(title, author)` composite index (btree)
+- `bigserial` ID type is sufficient for 10M+ rows.
+- List endpoints use keyset cursor pagination with a capped page size instead of returning an entire shelf.
+- `BookList` uses TanStack Virtual so only visible rows are mounted in the browser.
+- Search uses PostgreSQL full-text search (`websearch_to_tsquery`) over title and author only, backed by a GIN expression index.
+- Search input is debounced before server queries are issued.
 
-### 🔲 Loose ends for production scale
+### Notes for production scale
 
-- **Cursor-based pagination:** The list endpoints return all results. For 10M records, implement cursor pagination (keyset pagination on `finished_at + id`).
-- **Full-text search:** `ilike` with leading wildcards can't use the btree index efficiently for arbitrary prefixes. Replace with PostgreSQL `gin` index on `to_tsvector('english', title || ' ' || author)` and use `tsquery` for search.
-- **Read replicas:** A production deployment would route read queries (public shelf views) to replicas and writes (book creation) to the primary.
-- **Rate limiting:** Add rate limiting on the public `getShelfByUsername` endpoint to prevent abuse.
-- **Connection pooling:** Use PgBouncer or similar for efficient connection management at scale.
+- The GIN index makes title/author search viable at 10M rows, but very broad terms can still return many matches and require sorting by shelf order.
+- `COUNT(*)` is intentionally not run on every paged request; UI labels report loaded rows and `+` when another page exists.
+- A production deployment would add rate limiting, connection pooling/PgBouncer, and likely read replicas for public shelf traffic.
 
 ---
 
