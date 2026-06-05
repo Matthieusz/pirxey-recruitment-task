@@ -8,5 +8,6 @@ export default defineConfig({
     ...(core.ignorePatterns ?? []),
     "apps/web/src/routeTree.gen.ts",
     "packages/ui/*",
+    ".agents",
   ],
 });
