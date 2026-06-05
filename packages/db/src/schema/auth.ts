@@ -7,7 +7,7 @@ export const user = pgTable("user", {
   emailVerified: boolean("email_verified").default(false).notNull(),
   id: text("id").primaryKey(),
   image: text("image"),
-  name: text("name").notNull(),
+  name: text("name").notNull().unique(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .$onUpdate(
