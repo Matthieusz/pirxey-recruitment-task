@@ -7,6 +7,8 @@ const ISBN_DIGITS_PATTERN = /^\d{10}$|^\d{13}$/u;
 export const MAX_TITLE_LENGTH = 200;
 export const MAX_AUTHOR_LENGTH = 200;
 export const MAX_PAGES = 20_000;
+export const MAX_BOOKS_PAGE_SIZE = 100;
+export const DEFAULT_BOOKS_PAGE_SIZE = 50;
 
 /**
  * Clean an ISBN string (remove dashes and spaces) and validate it's 10 or 13 digits.
@@ -52,9 +54,16 @@ export const createBookSchema = z.object({
 });
 
 /**
- * Optional search/query parameter for listing books.
+ * Optional search/query and cursor pagination parameters for listing books.
  */
 export const listBooksSchema = z.object({
+  cursor: z.string().max(64).optional(),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_BOOKS_PAGE_SIZE)
+    .default(DEFAULT_BOOKS_PAGE_SIZE),
   query: z.string().max(200).optional(),
 });
 
@@ -64,3 +73,5 @@ export const listBooksSchema = z.object({
 export const nameSchema = z.object({
   name: z.string().min(1, "Name is required.").max(100),
 });
+
+export const shelfBooksSchema = nameSchema.merge(listBooksSchema);
