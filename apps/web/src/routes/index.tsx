@@ -1,54 +1,131 @@
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useRef, useState } from "react";
 
-import { orpc } from "@/utils/orpc";
+import { AddBookForm } from "@/components/shelf/add-book-form";
+import type { NewBookInput } from "@/components/shelf/add-book-form";
+import { BookList } from "@/components/shelf/book-list";
+import { SearchBar } from "@/components/shelf/search-bar";
+import type { Book } from "@/data/books-mock";
+import { MOCK_BOOKS } from "@/data/books-mock";
 
-const TITLE_TEXT = `
- ██████╗ ███████╗████████╗████████╗███████╗██████╗
- ██╔══██╗██╔════╝╚══██╔══╝╚══██╔══╝██╔════╝██╔══██╗
- ██████╔╝█████╗     ██║      ██║   █████╗  ██████╔╝
- ██╔══██╗██╔══╝     ██║      ██║   ██╔══╝  ██╔══██╗
- ██████╔╝███████╗   ██║      ██║   ███████╗██║  ██║
- ╚═════╝ ╚══════╝   ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝
+const NEW_BOOK_HIGHLIGHT_MS = 1400;
 
- ████████╗    ███████╗████████╗ █████╗  ██████╗██╗  ██╗
- ╚══██╔══╝    ██╔════╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝
-    ██║       ███████╗   ██║   ███████║██║     █████╔╝
-    ██║       ╚════██║   ██║   ██╔══██║██║     ██╔═██╗
-    ██║       ███████║   ██║   ██║  ██║╚██████╗██║  ██╗
-    ╚═╝       ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
- `;
-
-const getHealthStatusText = (isLoading: boolean, data: unknown) => {
-  if (isLoading) {
-    return "Checking...";
+const createBookId = (): string => {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return `b-${crypto.randomUUID()}`;
   }
-  return data ? "Connected" : "Disconnected";
+  return `b-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 };
 
+const todayIso = (): string => new Date().toISOString().slice(0, 10);
+
 const HomeComponent = () => {
-  const healthCheck = useQuery(orpc.healthCheck.queryOptions());
+  const [books, setBooks] = useState<readonly Book[]>(MOCK_BOOKS);
+  const [query, setQuery] = useState("");
+  const [newBookIds, setNewBookIds] = useState<ReadonlySet<string>>(
+    () => new Set<string>()
+  );
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const filteredBooks = useMemo(() => {
+    const trimmed = query.trim().toLowerCase();
+    if (trimmed === "") {
+      return books;
+    }
+    return books.filter(
+      (book) =>
+        book.title.toLowerCase().includes(trimmed) ||
+        book.author.toLowerCase().includes(trimmed)
+    );
+  }, [books, query]);
+
+  const handleAdd = (input: NewBookInput) => {
+    const newBook: Book = {
+      author: input.author,
+      finishedAt: todayIso(),
+      id: createBookId(),
+      isbn: input.isbn,
+      pages: input.pages,
+      rating: input.rating,
+      title: input.title,
+    };
+    // Mockup seam: swap this in-memory append for an orpc.books.create
+    // mutation once the API lands. Ordering and de-duplication will move
+    // server-side at that point.
+    setBooks((prev) => [newBook, ...prev]);
+    setNewBookIds((prev) => new Set([...prev, newBook.id]));
+    window.setTimeout(() => {
+      setNewBookIds((prev) => {
+        if (!prev.has(newBook.id)) {
+          return prev;
+        }
+        const next = new Set(prev);
+        next.delete(newBook.id);
+        return next;
+      });
+    }, NEW_BOOK_HIGHLIGHT_MS);
+  };
+
+  const handleClearQuery = () => {
+    setQuery("");
+    searchInputRef.current?.focus();
+  };
+
+  const countLabel =
+    filteredBooks.length === books.length
+      ? `${books.length} books`
+      : `${filteredBooks.length} of ${books.length} books`;
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-2">
-      <pre className="overflow-x-auto font-mono text-sm">{TITLE_TEXT}</pre>
-      <div className="grid gap-6">
-        <section className="rounded-lg border p-4">
-          <h2 className="mb-2 font-medium">API Status</h2>
-          <div className="flex items-center gap-2">
-            <div
-              className={`h-2 w-2 rounded-full ${healthCheck.data ? "bg-green-500" : "bg-red-500"}`}
-            />
-            <span className="text-muted-foreground text-sm">
-              {getHealthStatusText(healthCheck.isLoading, healthCheck.data)}
-            </span>
-          </div>
-        </section>
+    <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14 md:py-20">
+      <header className="mb-10 flex items-baseline justify-between gap-4 md:mb-14">
+        <div>
+          <h1 className="text-3xl font-medium tracking-tight text-ink md:text-4xl">
+            Shelf
+          </h1>
+          <p className="mt-1.5 max-w-[55ch] text-[0.9375rem] text-ink-muted">
+            A private record of what you&rsquo;ve read.
+          </p>
+        </div>
+        <p
+          aria-live="polite"
+          className="shrink-0 font-mono text-[0.8125rem] text-ink-soft tabular-nums"
+        >
+          {countLabel}
+        </p>
+      </header>
+
+      <div className="space-y-5 md:space-y-7">
+        <SearchBar
+          inputRef={searchInputRef}
+          onChange={setQuery}
+          value={query}
+        />
+        <AddBookForm onAdd={handleAdd} />
+        <BookList
+          books={filteredBooks}
+          newBookIds={newBookIds}
+          onClearQuery={handleClearQuery}
+          query={query}
+          totalBooks={books.length}
+        />
       </div>
-    </div>
+
+      <footer className="mt-16 border-t border-hairline pt-6">
+        <p className="font-mono text-[0.75rem] text-ink-soft">
+          Mockup data. The list resets on reload.
+        </p>
+      </footer>
+    </main>
   );
 };
 
 export const Route = createFileRoute("/")({
   component: HomeComponent,
+  head: () => ({
+    meta: [{ title: "Shelf" }],
+  }),
 });

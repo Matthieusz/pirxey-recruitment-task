@@ -1,0 +1,115 @@
+import { cn } from "@pirxey-recruitment-task/ui/lib/utils";
+import { Search, X } from "lucide-react";
+import type { RefObject } from "react";
+import { useEffect, useState } from "react";
+
+interface SearchBarProps {
+  readonly inputRef: RefObject<HTMLInputElement | null>;
+  readonly onChange: (value: string) => void;
+  readonly value: string;
+}
+
+export const SearchBar = ({ inputRef, onChange, value }: SearchBarProps) => {
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined") {
+      return;
+    }
+    const platform = navigator.userAgent.toLowerCase();
+    setIsMac(platform.includes("mac"));
+  }, []);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const isModifier = isMac ? event.metaKey : event.ctrlKey;
+      const isK = event.key.toLowerCase() === "k";
+
+      if (isModifier && isK) {
+        event.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
+        return;
+      }
+
+      if (
+        event.key === "Escape" &&
+        document.activeElement === inputRef.current
+      ) {
+        if (value !== "") {
+          event.preventDefault();
+          onChange("");
+          return;
+        }
+        inputRef.current?.blur();
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+    };
+  }, [inputRef, isMac, onChange, value]);
+
+  const handleClear = () => {
+    onChange("");
+    inputRef.current?.focus();
+  };
+
+  return (
+    <search aria-label="Search the shelf" className="block">
+      <form className="relative" onSubmit={(event) => event.preventDefault()}>
+        <Search
+          aria-hidden="true"
+          className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-4 size-4 text-ink-soft"
+        />
+        <input
+          aria-label="Search books by title or author"
+          autoComplete="off"
+          className={cn(
+            "h-12 w-full rounded-md border border-hairline bg-page-edge/40 pr-24 pl-11",
+            "text-base text-ink placeholder:text-ink-soft",
+            "transition-colors duration-150",
+            "focus:bg-paper focus-visible:border-magenta-soft focus-visible:outline-none",
+            "focus-visible:ring-2 focus-visible:ring-magenta-soft/30 focus-visible:ring-offset-0"
+          )}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="Search by title or author"
+          ref={inputRef}
+          spellCheck={false}
+          type="search"
+          value={value}
+        />
+        {value === "" ? (
+          <kbd
+            aria-hidden="true"
+            className={cn(
+              "-translate-y-1/2 absolute top-1/2 right-3 flex items-center gap-1",
+              "rounded-sm border border-hairline bg-paper/60 px-1.5 py-0.5",
+              "font-mono text-[11px] text-ink-soft"
+            )}
+          >
+            <span className="text-[13px] leading-none">
+              {isMac ? "⌘" : "Ctrl"}
+            </span>
+            <span className="leading-none">K</span>
+          </kbd>
+        ) : (
+          <button
+            aria-label="Clear search"
+            className={cn(
+              "-translate-y-1/2 absolute top-1/2 right-3 flex size-7 items-center justify-center",
+              "rounded-sm text-ink-soft transition-colors",
+              "hover:bg-page-edge hover:text-ink",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-magenta-soft/40"
+            )}
+            onClick={handleClear}
+            type="button"
+          >
+            <X aria-hidden="true" className="size-4" />
+          </button>
+        )}
+      </form>
+    </search>
+  );
+};

@@ -13,8 +13,6 @@ import { evlogErrorHandler } from "evlog/nitro/v3";
 
 import type { orpc } from "@/utils/orpc";
 
-import Header from "../components/header";
-
 import appCss from "../index.css?url";
 
 export interface RouterAppContext {
@@ -23,13 +21,12 @@ export interface RouterAppContext {
 }
 
 const RootDocument = () => (
-  <html lang="en" className="dark">
+  <html lang="en">
     <head>
       <HeadContent />
     </head>
     <body>
-      <div className="grid h-svh grid-rows-[auto_1fr]">
-        <Header />
+      <div className="grid min-h-svh grid-rows-[auto_1fr] bg-paper text-ink">
         <Outlet />
       </div>
       <Toaster richColors />
@@ -49,6 +46,19 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         href: appCss,
         rel: "stylesheet",
       },
+      {
+        href: "https://fonts.googleapis.com",
+        rel: "preconnect",
+      },
+      {
+        crossOrigin: "anonymous",
+        href: "https://fonts.gstatic.com",
+        rel: "preconnect",
+      },
+      {
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap",
+        rel: "stylesheet",
+      },
     ],
     meta: [
       {
@@ -59,7 +69,11 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         name: "viewport",
       },
       {
-        title: "My App",
+        content: "oklch(0.98 0.005 15)",
+        name: "theme-color",
+      },
+      {
+        title: "Shelf",
       },
     ],
   }),
