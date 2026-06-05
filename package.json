@@ -20,6 +20,7 @@
     "db:watch": "turbo -F @pirxey-recruitment-task/db db:watch",
     "db:stop": "turbo -F @pirxey-recruitment-task/db db:stop",
     "db:down": "turbo -F @pirxey-recruitment-task/db db:down",
+    "db:seed:demo10m": "turbo -F @pirxey-recruitment-task/db seed:demo10m",
     "check": "ultracite check",
     "fix": "ultracite fix"
   },
