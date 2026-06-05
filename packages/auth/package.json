@@ -1,0 +1,24 @@
+{
+  "name": "@pirxey-recruitment-task/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@pirxey-recruitment-task/db": "workspace:*",
+    "@pirxey-recruitment-task/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@pirxey-recruitment-task/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

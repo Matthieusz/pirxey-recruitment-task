@@ -1,0 +1,42 @@
+{
+  "name": "pirxey-recruitment-task",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F server dev",
+    "db:push": "turbo -F @pirxey-recruitment-task/db db:push",
+    "db:studio": "turbo -F @pirxey-recruitment-task/db db:studio",
+    "db:generate": "turbo -F @pirxey-recruitment-task/db db:generate",
+    "db:migrate": "turbo -F @pirxey-recruitment-task/db db:migrate",
+    "db:start": "turbo -F @pirxey-recruitment-task/db db:start",
+    "db:watch": "turbo -F @pirxey-recruitment-task/db db:watch",
+    "db:stop": "turbo -F @pirxey-recruitment-task/db db:stop",
+    "db:down": "turbo -F @pirxey-recruitment-task/db db:down",
+    "check": "ultracite check",
+    "fix": "ultracite fix"
+  },
+  "dependencies": {
+    "@pirxey-recruitment-task/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@pirxey-recruitment-task/config": "workspace:*",
+    "@types/node": "catalog:",
+    "lefthook": "latest",
+    "oxfmt": "latest",
+    "oxlint": "latest",
+    "turbo": "^2.8.12",
+    "typescript": "catalog:",
+    "ultracite": "7.8.1"
+  },
+  "packageManager": "pnpm@11.1.2"
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-lyra",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@pirxey-recruitment-task/ui/components",
+    "utils": "@pirxey-recruitment-task/ui/lib/utils",
+    "hooks": "@pirxey-recruitment-task/ui/hooks",
+    "lib": "@pirxey-recruitment-task/ui/lib",
+    "ui": "@pirxey-recruitment-task/ui/components"
+  },
+  "menuColor": "default",
+  "menuAccent": "subtle",
+  "registries": {}
+}
