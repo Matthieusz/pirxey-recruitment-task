@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   bigserial,
   date,
@@ -32,7 +32,15 @@ export const books = pgTable(
   },
   (table) => [
     index("books_user_id_finished_at_idx").on(table.userId, table.finishedAt),
-    index("books_title_author_idx").on(table.title, table.author),
+    index("books_user_id_finished_at_id_idx").on(
+      table.userId,
+      table.finishedAt,
+      table.id
+    ),
+    index("books_title_author_search_idx").using(
+      "gin",
+      sql`to_tsvector('simple', ${table.title} || ' ' || ${table.author})`
+    ),
   ]
 );
 
