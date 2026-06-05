@@ -52,7 +52,7 @@ const validateAuthor = (raw: string): string | null => {
 const validateIsbn = (raw: string): string | null => {
   const trimmed = raw.trim();
   if (trimmed === "") {
-    return null;
+    return "ISBN is required.";
   }
   const cleaned = trimmed.replaceAll(ISBN_NOISE_PATTERN, "");
   if (!ISBN_DIGITS_PATTERN.test(cleaned)) {
@@ -449,11 +449,11 @@ const FormFields = ({
 
       <div className="md:col-span-3">
         <label className={labelClass} htmlFor={ids.isbn}>
-          ISBN <span className="font-normal text-ink-soft">optional</span>
+          ISBN
         </label>
         <input
           {...inputBaseProps(ids.isbnError, isbnHasError)}
-          aria-label="ISBN, optional"
+          aria-label="ISBN"
           autoComplete="off"
           className={cn(fieldClass, "font-mono text-[0.875rem]")}
           id={ids.isbn}

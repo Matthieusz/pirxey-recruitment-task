@@ -29,6 +29,8 @@ export default function UserMenu() {
     );
   }
 
+  const { name } = session.user;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button variant="outline" />}>
@@ -39,6 +41,11 @@ export default function UserMenu() {
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>{session.user.email}</DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/shelf/$name" params={{ name }}>
+              My Shelf
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onClick={() => {

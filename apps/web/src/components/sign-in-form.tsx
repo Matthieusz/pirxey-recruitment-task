@@ -35,10 +35,20 @@ export default function SignInForm({
           onError: (error) => {
             toast.error(error.error.message || error.error.statusText);
           },
-          onSuccess: () => {
-            navigate({
-              to: "/dashboard",
-            });
+          onSuccess: async () => {
+            // Fetch session to get user data including name
+            const session = await authClient.getSession();
+            const name = session.data?.user?.name;
+
+            if (name) {
+              navigate({
+                params: { name },
+                to: "/shelf/$name",
+              });
+            } else {
+              navigate({ to: "/" });
+            }
+
             toast.success("Sign in successful");
           },
         }

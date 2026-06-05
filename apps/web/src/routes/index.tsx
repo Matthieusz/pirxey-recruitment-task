@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 
 import { AddBookForm } from "@/components/shelf/add-book-form";
@@ -52,9 +52,6 @@ const HomeComponent = () => {
       rating: input.rating,
       title: input.title,
     };
-    // Mockup seam: swap this in-memory append for an orpc.books.create
-    // mutation once the API lands. Ordering and de-duplication will move
-    // server-side at that point.
     setBooks((prev) => [newBook, ...prev]);
     setNewBookIds((prev) => new Set([...prev, newBook.id]));
     window.setTimeout(() => {
@@ -81,6 +78,30 @@ const HomeComponent = () => {
 
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14 md:py-20">
+      {/* Demo banner */}
+      <div className="mb-6 flex items-center gap-3 rounded-md border border-hairline bg-page-edge/60 px-4 py-3">
+        <span className="rounded-sm bg-magenta/10 px-2 py-0.5 font-mono text-[0.6875rem] font-medium uppercase tracking-wider text-magenta">
+          Demo
+        </span>
+        <p className="text-[0.8125rem] text-ink-muted">
+          This is a demo shelf with mock data.{" "}
+          <Link
+            to="/login"
+            className="font-medium text-ink underline underline-offset-2 transition-colors hover:text-magenta"
+          >
+            Sign up
+          </Link>{" "}
+          or{" "}
+          <Link
+            to="/login"
+            className="font-medium text-ink underline underline-offset-2 transition-colors hover:text-magenta"
+          >
+            sign in
+          </Link>{" "}
+          to save your own shelf.
+        </p>
+      </div>
+
       <header className="mb-10 flex items-baseline justify-between gap-4 md:mb-14">
         <div>
           <h1 className="text-3xl font-medium tracking-tight text-ink md:text-4xl">
@@ -116,7 +137,14 @@ const HomeComponent = () => {
 
       <footer className="mt-16 border-t border-hairline pt-6">
         <p className="font-mono text-[0.75rem] text-ink-soft">
-          Mockup data. The list resets on reload.
+          Demo data. Books are stored in memory and reset on reload.{" "}
+          <Link
+            to="/login"
+            className="underline underline-offset-2 transition-colors hover:text-ink"
+          >
+            Sign up
+          </Link>{" "}
+          to keep a permanent shelf.
         </p>
       </footer>
     </main>
@@ -126,6 +154,6 @@ const HomeComponent = () => {
 export const Route = createFileRoute("/")({
   component: HomeComponent,
   head: () => ({
-    meta: [{ title: "Shelf" }],
+    meta: [{ title: "Shelf — Demo" }],
   }),
 });

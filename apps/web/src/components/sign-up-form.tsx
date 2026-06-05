@@ -39,7 +39,8 @@ export default function SignUpForm({
           },
           onSuccess: () => {
             navigate({
-              to: "/dashboard",
+              params: { name: value.name },
+              to: "/shelf/$name",
             });
             toast.success("Sign up successful");
           },
@@ -49,7 +50,10 @@ export default function SignUpForm({
     validators: {
       onSubmit: z.object({
         email: z.email("Invalid email address"),
-        name: z.string().min(2, "Name must be at least 2 characters"),
+        name: z
+          .string()
+          .min(2, "Name must be at least 2 characters")
+          .max(100, "Name must be 100 characters or fewer"),
         password: z.string().min(8, "Password must be at least 8 characters"),
       }),
     },
@@ -82,6 +86,7 @@ export default function SignUpForm({
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Your name (also your shelf URL)"
                 />
                 {field.state.meta.errors.map((error) => (
                   <p key={error?.message} className="text-red-500">

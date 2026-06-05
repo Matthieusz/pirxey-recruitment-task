@@ -9,24 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TodosRouteImport } from './routes/todos'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthDashboardRouteImport } from './routes/_auth/dashboard'
+import { Route as ShelfNameRouteImport } from './routes/shelf/$name'
 
-const TodosRoute = TodosRouteImport.update({
-  id: '/todos',
-  path: '/todos',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRouteRoute = AuthRouteRouteImport.update({
-  id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -34,68 +23,49 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthDashboardRoute = AuthDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthRouteRoute,
+const ShelfNameRoute = ShelfNameRouteImport.update({
+  id: '/shelf/$name',
+  path: '/shelf/$name',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/todos': typeof TodosRoute
-  '/dashboard': typeof AuthDashboardRoute
+  '/shelf/$name': typeof ShelfNameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/todos': typeof TodosRoute
-  '/dashboard': typeof AuthDashboardRoute
+  '/shelf/$name': typeof ShelfNameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_auth': typeof AuthRouteRouteWithChildren
   '/login': typeof LoginRoute
-  '/todos': typeof TodosRoute
-  '/_auth/dashboard': typeof AuthDashboardRoute
+  '/shelf/$name': typeof ShelfNameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/todos' | '/dashboard'
+  fullPaths: '/' | '/login' | '/shelf/$name'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/todos' | '/dashboard'
-  id: '__root__' | '/' | '/_auth' | '/login' | '/todos' | '/_auth/dashboard'
+  to: '/' | '/login' | '/shelf/$name'
+  id: '__root__' | '/' | '/login' | '/shelf/$name'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRouteRoute: typeof AuthRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
-  TodosRoute: typeof TodosRoute
+  ShelfNameRoute: typeof ShelfNameRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/todos': {
-      id: '/todos'
-      path: '/todos'
-      fullPath: '/todos'
-      preLoaderRoute: typeof TodosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_auth': {
-      id: '/_auth'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -105,33 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/dashboard': {
-      id: '/_auth/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthDashboardRouteImport
-      parentRoute: typeof AuthRouteRoute
+    '/shelf/$name': {
+      id: '/shelf/$name'
+      path: '/shelf/$name'
+      fullPath: '/shelf/$name'
+      preLoaderRoute: typeof ShelfNameRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface AuthRouteRouteChildren {
-  AuthDashboardRoute: typeof AuthDashboardRoute
-}
-
-const AuthRouteRouteChildren: AuthRouteRouteChildren = {
-  AuthDashboardRoute: AuthDashboardRoute,
-}
-
-const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
-  AuthRouteRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRouteRoute: AuthRouteRouteWithChildren,
   LoginRoute: LoginRoute,
-  TodosRoute: TodosRoute,
+  ShelfNameRoute: ShelfNameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
