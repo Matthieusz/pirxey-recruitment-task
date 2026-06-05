@@ -1,3 +1,4 @@
+import { serve } from "@hono/node-server";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";
@@ -8,8 +9,10 @@ import { appRouter } from "@pirxey-recruitment-task/api/routers/index";
 import { auth } from "@pirxey-recruitment-task/auth";
 import { env } from "@pirxey-recruitment-task/env/server";
 import { initLogger } from "evlog";
-import { createAuthMiddleware, type BetterAuthInstance } from "evlog/better-auth";
-import { evlog, type EvlogVariables } from "evlog/hono";
+import { createAuthMiddleware } from "evlog/better-auth";
+import type { BetterAuthInstance } from "evlog/better-auth";
+import { evlog } from "evlog/hono";
+import type { EvlogVariables } from "evlog/hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
@@ -33,42 +36,38 @@ app.use("*", async (c, next) => {
 app.use(
   "/*",
   cors({
-    origin: env.CORS_ORIGIN,
-    allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
+    allowMethods: ["GET", "POST", "OPTIONS"],
     credentials: true,
-  }),
+    origin: env.CORS_ORIGIN,
+  })
 );
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
+const handleError = (error: unknown) => {
+  console.error(error);
+};
+
 export const apiHandler = new OpenAPIHandler(appRouter, {
+  interceptors: [onError(handleError)],
   plugins: [
     new OpenAPIReferencePlugin({
       schemaConverters: [new ZodToJsonSchemaConverter()],
     }),
   ],
-  interceptors: [
-    onError((error) => {
-      console.error(error);
-    }),
-  ],
 });
 
 export const rpcHandler = new RPCHandler(appRouter, {
-  interceptors: [
-    onError((error) => {
-      console.error(error);
-    }),
-  ],
+  interceptors: [onError(handleError)],
 });
 
 app.use("/*", async (c, next) => {
   const context = await createContext({ context: c });
 
   const rpcResult = await rpcHandler.handle(c.req.raw, {
+    context,
     prefix: "/rpc",
-    context: context,
   });
 
   if (rpcResult.matched) {
@@ -76,8 +75,8 @@ app.use("/*", async (c, next) => {
   }
 
   const apiResult = await apiHandler.handle(c.req.raw, {
+    context,
     prefix: "/api-reference",
-    context: context,
   });
 
   if (apiResult.matched) {
@@ -87,11 +86,7 @@ app.use("/*", async (c, next) => {
   await next();
 });
 
-app.get("/", (c) => {
-  return c.text("OK");
-});
-
-import { serve } from "@hono/node-server";
+app.get("/", (c) => c.text("OK"));
 
 serve(
   {
@@ -100,5 +95,5 @@ serve(
   },
   (info) => {
     console.log(`Server is running on http://localhost:${info.port}`);
-  },
+  }
 );

@@ -10,4 +10,7 @@ export default defineConfig({
     "packages/ui/*",
     ".agents",
   ],
+  rules: {
+    "no-barrel-file": ["error", { threshold: 250 }],
+  },
 });

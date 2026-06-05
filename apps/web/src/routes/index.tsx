@@ -3,10 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { orpc } from "@/utils/orpc";
 
-export const Route = createFileRoute("/")({
-  component: HomeComponent,
-});
-
 const TITLE_TEXT = `
  ██████╗ ███████╗████████╗████████╗███████╗██████╗
  ██╔══██╗██╔════╝╚══██╔══╝╚══██╔══╝██╔════╝██╔══██╗
@@ -23,7 +19,14 @@ const TITLE_TEXT = `
     ╚═╝       ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
  `;
 
-function HomeComponent() {
+const getHealthStatusText = (isLoading: boolean, data: unknown) => {
+  if (isLoading) {
+    return "Checking...";
+  }
+  return data ? "Connected" : "Disconnected";
+};
+
+const HomeComponent = () => {
   const healthCheck = useQuery(orpc.healthCheck.queryOptions());
 
   return (
@@ -37,15 +40,15 @@ function HomeComponent() {
               className={`h-2 w-2 rounded-full ${healthCheck.data ? "bg-green-500" : "bg-red-500"}`}
             />
             <span className="text-muted-foreground text-sm">
-              {healthCheck.isLoading
-                ? "Checking..."
-                : healthCheck.data
-                  ? "Connected"
-                  : "Disconnected"}
+              {getHealthStatusText(healthCheck.isLoading, healthCheck.data)}
             </span>
           </div>
         </section>
       </div>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/")({
+  component: HomeComponent,
+});
