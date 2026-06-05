@@ -1,4 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { createFileRoute, getRouteApi, notFound } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -7,10 +11,12 @@ import type { NewBookInput } from "@/components/shelf/add-book-form";
 import { AddBookForm } from "@/components/shelf/add-book-form";
 import { BookList } from "@/components/shelf/book-list";
 import { SearchBar } from "@/components/shelf/search-bar";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { authClient } from "@/lib/auth-client";
-import { orpc } from "@/utils/orpc";
+import { client, orpc } from "@/utils/orpc";
 
 const NEW_BOOK_HIGHLIGHT_MS = 1400;
+const PAGE_SIZE = 50;
 const routeApi = getRouteApi("/shelf/$name");
 
 const mapDbBook = (db: {
@@ -36,6 +42,7 @@ const RouteComponent = () => {
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query.trim(), 300);
   const [newBookIds, setNewBookIds] = useState<ReadonlySet<string>>(
     () => new Set<string>()
   );
@@ -43,8 +50,17 @@ const RouteComponent = () => {
   const { data: session } = authClient.useSession();
   const isOwner = session?.user?.name === name;
 
-  const shelfQuery = useQuery({
-    ...orpc.books.getShelfByName.queryOptions({ input: { name } }),
+  const shelfQuery = useInfiniteQuery({
+    getNextPageParam: (page) => page?.nextCursor ?? undefined,
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam }) =>
+      client.books.getShelfByName({
+        cursor: pageParam ?? undefined,
+        limit: PAGE_SIZE,
+        name,
+        query: debouncedQuery || undefined,
+      }),
+    queryKey: ["books", "shelf", name, debouncedQuery],
   });
 
   const createBook = useMutation(
@@ -52,50 +68,38 @@ const RouteComponent = () => {
       onError: (error) => {
         toast.error(error.message);
       },
-      onSuccess: () => {
+      onSuccess: (inserted) => {
+        const newBookId = inserted ? `b-${inserted.id}` : null;
+        if (newBookId) {
+          setNewBookIds((prev) => new Set([...prev, newBookId]));
+          window.setTimeout(() => {
+            setNewBookIds((prev) => {
+              const next = new Set(prev);
+              next.delete(newBookId);
+              return next;
+            });
+          }, NEW_BOOK_HIGHLIGHT_MS);
+        }
+
         queryClient.invalidateQueries({
-          queryKey: orpc.books.getShelfByName.queryKey({ input: { name } }),
+          queryKey: ["books", "shelf", name],
         });
       },
     })
   );
 
+  const firstPage = shelfQuery.data?.pages[0];
+  const userProfile = firstPage?.user;
+
   const rawBooks = useMemo(
-    () => shelfQuery.data?.books ?? [],
-    [shelfQuery.data?.books]
+    () => shelfQuery.data?.pages.flatMap((page) => page?.books ?? []) ?? [],
+    [shelfQuery.data?.pages]
   );
 
-  // Stable reference to avoid re-mapping on every render
   const books = useMemo(() => rawBooks.map(mapDbBook), [rawBooks]);
 
-  const userProfile = shelfQuery.data?.user;
-
-  const filteredBooks = useMemo(() => {
-    const trimmed = query.trim().toLowerCase();
-    if (trimmed === "") {
-      return books;
-    }
-    return books.filter(
-      (book) =>
-        book.title.toLowerCase().includes(trimmed) ||
-        book.author.toLowerCase().includes(trimmed)
-    );
-  }, [books, query]);
-
   const handleAdd = (input: NewBookInput) => {
-    createBook.mutate(input, {
-      onSuccess: () => {
-        const optimisticId = `b-optimistic-${Date.now()}`;
-        setNewBookIds((prev) => new Set([...prev, optimisticId]));
-        window.setTimeout(() => {
-          setNewBookIds((prev) => {
-            const next = new Set(prev);
-            next.delete(optimisticId);
-            return next;
-          });
-        }, NEW_BOOK_HIGHLIGHT_MS);
-      },
-    });
+    createBook.mutate(input);
   };
 
   const handleClearQuery = () => {
@@ -103,10 +107,11 @@ const RouteComponent = () => {
     searchInputRef.current?.focus();
   };
 
-  const countLabel =
-    filteredBooks.length === books.length
-      ? `${books.length} books`
-      : `${filteredBooks.length} of ${books.length} books`;
+  const hasNextPage = Boolean(shelfQuery.hasNextPage);
+  const totalBooksForState = debouncedQuery ? 1 : books.length;
+  const countLabel = debouncedQuery
+    ? `${books.length.toLocaleString()} matches loaded${hasNextPage ? "+" : ""}`
+    : `${books.length.toLocaleString()} books loaded${hasNextPage ? "+" : ""}`;
 
   if (shelfQuery.isLoading) {
     return (
@@ -116,7 +121,7 @@ const RouteComponent = () => {
     );
   }
 
-  if (!shelfQuery.data || !userProfile) {
+  if (!firstPage || !userProfile) {
     throw notFound();
   }
 
@@ -128,7 +133,7 @@ const RouteComponent = () => {
             {userProfile.name}&rsquo;s Shelf
           </h1>
           <p className="mt-1.5 max-w-[55ch] text-[0.9375rem] text-ink-muted">
-            A private record of what&rsquo;s been read.
+            A record of what&rsquo;s been read.
           </p>
         </div>
         <p
@@ -149,11 +154,14 @@ const RouteComponent = () => {
         {isOwner && <AddBookForm onAdd={handleAdd} />}
 
         <BookList
-          books={filteredBooks}
+          books={books}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={shelfQuery.isFetchingNextPage}
           newBookIds={newBookIds}
           onClearQuery={handleClearQuery}
-          query={query}
-          totalBooks={books.length}
+          onLoadMore={() => shelfQuery.fetchNextPage()}
+          query={debouncedQuery}
+          totalBooks={totalBooksForState}
         />
       </div>
     </main>

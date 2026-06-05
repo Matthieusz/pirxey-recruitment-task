@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShelfNameRouteImport } from './routes/shelf/$name'
+import { Route as Demo10mRouteImport } from './routes/demo/10m'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -28,34 +29,43 @@ const ShelfNameRoute = ShelfNameRouteImport.update({
   path: '/shelf/$name',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Demo10mRoute = Demo10mRouteImport.update({
+  id: '/demo/10m',
+  path: '/demo/10m',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/demo/10m': typeof Demo10mRoute
   '/shelf/$name': typeof ShelfNameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/demo/10m': typeof Demo10mRoute
   '/shelf/$name': typeof ShelfNameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/demo/10m': typeof Demo10mRoute
   '/shelf/$name': typeof ShelfNameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/shelf/$name'
+  fullPaths: '/' | '/login' | '/demo/10m' | '/shelf/$name'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/shelf/$name'
-  id: '__root__' | '/' | '/login' | '/shelf/$name'
+  to: '/' | '/login' | '/demo/10m' | '/shelf/$name'
+  id: '__root__' | '/' | '/login' | '/demo/10m' | '/shelf/$name'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  Demo10mRoute: typeof Demo10mRoute
   ShelfNameRoute: typeof ShelfNameRoute
 }
 
@@ -82,12 +92,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShelfNameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/10m': {
+      id: '/demo/10m'
+      path: '/demo/10m'
+      fullPath: '/demo/10m'
+      preLoaderRoute: typeof Demo10mRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  Demo10mRoute: Demo10mRoute,
   ShelfNameRoute: ShelfNameRoute,
 }
 export const routeTree = rootRouteImport
