@@ -11,6 +11,9 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { createMiddleware } from "@tanstack/react-start";
 import { evlogErrorHandler } from "evlog/nitro/v3";
 
+import { Navbar } from "@/components/navbar";
+import { ThemeMeta } from "@/components/theme-meta";
+import { ThemeProvider } from "@/components/theme-provider";
 import type { orpc } from "@/utils/orpc";
 
 import appCss from "../index.css?url";
@@ -21,18 +24,28 @@ export interface RouterAppContext {
 }
 
 const RootDocument = () => (
-  <html lang="en">
+  <html lang="en" suppressHydrationWarning>
     <head>
       <HeadContent />
     </head>
     <body>
-      <div className="grid min-h-svh grid-rows-[auto_1fr] bg-paper text-ink">
-        <Outlet />
-      </div>
-      <Toaster richColors />
-      <TanStackRouterDevtools position="bottom-left" />
-      <ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />
-      <Scripts />
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        disableTransitionOnChange
+        enableColorScheme
+        enableSystem
+      >
+        <ThemeMeta />
+        <div className="grid min-h-svh grid-rows-[auto_1fr] bg-paper text-ink">
+          <Navbar />
+          <Outlet />
+        </div>
+        <Toaster richColors />
+        <TanStackRouterDevtools position="bottom-left" />
+        <ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />
+        <Scripts />
+      </ThemeProvider>
     </body>
   </html>
 );

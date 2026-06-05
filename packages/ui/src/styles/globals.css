@@ -83,6 +83,16 @@
   --sidebar-accent-foreground: oklch(0.94 0.004 15);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.6 0.18 15);
+
+  --paper: oklch(0.15 0.008 15);
+  --page-edge: oklch(0.22 0.008 15);
+  --hairline: oklch(1 0 0 / 10%);
+  --ink: oklch(0.94 0.004 15);
+  --ink-muted: oklch(0.65 0.008 15);
+  --ink-soft: oklch(0.5 0.008 15);
+  --magenta: oklch(0.65 0.22 15);
+  --magenta-soft: oklch(0.65 0.16 15);
+  --magenta-wash: oklch(0.22 0.04 15);
 }
 
 @theme inline {
@@ -163,6 +173,11 @@
     background: var(--magenta-wash);
     color: var(--ink);
   }
+}
+
+.dark ::selection {
+  background: var(--magenta-wash);
+  color: var(--ink);
 }
 
 @keyframes shelf-row-flash {
