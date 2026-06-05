@@ -1,5 +1,8 @@
 import { cn } from "@pirxey-recruitment-task/ui/lib/utils";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { SearchX } from "lucide-react";
+import { useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
 
 import type { Book } from "@/data/books-mock";
 
@@ -22,17 +25,29 @@ const formatPages = (pages: number): string =>
 
 interface BookRowProps {
   readonly book: Book;
+  readonly dataIndex: number;
   readonly isNew: boolean;
+  readonly measureElement?: (element: HTMLLIElement | null) => void;
+  readonly style?: CSSProperties;
 }
 
-const BookRow = ({ book, isNew }: BookRowProps) => (
+const BookRow = ({
+  book,
+  dataIndex,
+  isNew,
+  measureElement,
+  style,
+}: BookRowProps) => (
   <li
     className={cn(
-      "group/row grid grid-cols-[1fr_auto] items-start gap-x-4 px-3 py-4",
+      "group/row absolute left-0 top-0 grid w-full grid-cols-[1fr_auto] items-start gap-x-4 border-b border-hairline px-3 py-4",
       "md:grid-cols-[minmax(0,1fr)_auto_8.5rem_4.5rem_5rem] md:items-center md:gap-x-8 md:px-4 md:py-4",
       "transition-colors duration-150 hover:bg-page-edge/50",
       isNew ? "[animation:shelf-row-flash_1400ms_ease-out_forwards]" : null
     )}
+    data-index={dataIndex}
+    ref={measureElement}
+    style={style}
   >
     <div className="min-w-0 md:col-start-1">
       <h3
@@ -120,21 +135,70 @@ const EmptyShelf = () => (
   </div>
 );
 
+const LoadingRow = ({
+  dataIndex,
+  measureElement,
+  style,
+}: {
+  readonly dataIndex: number;
+  readonly measureElement?: (element: HTMLLIElement | null) => void;
+  readonly style: CSSProperties;
+}) => (
+  <li
+    className="absolute left-0 top-0 flex w-full items-center justify-center border-b border-hairline px-4 py-6 text-[0.875rem] text-ink-muted"
+    data-index={dataIndex}
+    ref={measureElement}
+    style={style}
+  >
+    Loading more books…
+  </li>
+);
+
 interface BookListProps {
   readonly books: readonly Book[];
+  readonly hasNextPage?: boolean;
+  readonly isFetchingNextPage?: boolean;
   readonly newBookIds: ReadonlySet<string>;
   readonly onClearQuery: () => void;
+  readonly onLoadMore?: () => void;
   readonly query: string;
   readonly totalBooks: number;
 }
 
 export const BookList = ({
   books,
+  hasNextPage = false,
+  isFetchingNextPage = false,
   newBookIds,
   onClearQuery,
+  onLoadMore,
   query,
   totalBooks,
 }: BookListProps) => {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowCount = hasNextPage ? books.length + 1 : books.length;
+  const rowVirtualizer = useVirtualizer({
+    count: rowCount,
+    estimateSize: () => 104,
+    getItemKey: (index) => books[index]?.id ?? `loader-${index}`,
+    getScrollElement: () => parentRef.current,
+    overscan: 8,
+  });
+  const virtualRows = rowVirtualizer.getVirtualItems();
+
+  useEffect(() => {
+    const lastRow = virtualRows.at(-1);
+
+    if (
+      lastRow &&
+      lastRow.index >= books.length - 1 &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
+      onLoadMore?.();
+    }
+  }, [books.length, hasNextPage, isFetchingNextPage, onLoadMore, virtualRows]);
+
   if (totalBooks === 0) {
     return <EmptyShelf />;
   }
@@ -145,11 +209,44 @@ export const BookList = ({
 
   return (
     <section aria-label="Book shelf">
-      <ul className="divide-y divide-hairline border-y border-hairline">
-        {books.map((book) => (
-          <BookRow book={book} isNew={newBookIds.has(book.id)} key={book.id} />
-        ))}
-      </ul>
+      <div
+        className="max-h-[72vh] overflow-auto border-y border-hairline"
+        ref={parentRef}
+      >
+        <ul
+          className="relative w-full"
+          style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+        >
+          {virtualRows.map((virtualRow) => {
+            const book = books[virtualRow.index];
+            const style: CSSProperties = {
+              transform: `translateY(${virtualRow.start}px)`,
+            };
+
+            if (!book) {
+              return (
+                <LoadingRow
+                  dataIndex={virtualRow.index}
+                  key={virtualRow.key}
+                  measureElement={rowVirtualizer.measureElement}
+                  style={style}
+                />
+              );
+            }
+
+            return (
+              <BookRow
+                book={book}
+                dataIndex={virtualRow.index}
+                isNew={newBookIds.has(book.id)}
+                key={virtualRow.key}
+                measureElement={rowVirtualizer.measureElement}
+                style={style}
+              />
+            );
+          })}
+        </ul>
+      </div>
     </section>
   );
 };
