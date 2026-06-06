@@ -6,6 +6,7 @@ import type { SQL } from "drizzle-orm";
 
 import { protectedProcedure, publicProcedure } from "../index";
 import {
+  bookSchema,
   createBookSchema,
   listBooksSchema,
   shelfBooksSchema,
@@ -115,7 +116,7 @@ export const booksRouter = {
         })
         .returning();
 
-      return inserted;
+      return inserted ? bookSchema.parse(inserted) : undefined;
     }),
 
   /**
@@ -140,7 +141,7 @@ export const booksRouter = {
         })
         .returning();
 
-      return inserted;
+      return inserted ? bookSchema.parse(inserted) : undefined;
     }),
 
   /**

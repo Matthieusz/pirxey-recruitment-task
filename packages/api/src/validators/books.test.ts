@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  bookFormSchema,
+  bookSchema,
   createBookSchema,
   isbnSchema,
   listBooksSchema,
   MAX_AUTHOR_LENGTH,
   MAX_PAGES,
   MAX_TITLE_LENGTH,
+  ratingLiteralSchema,
   shelfBooksSchema,
+  shelfPageSchema,
+  toNewBookInput,
 } from "../validators/books";
 
 describe("isbnSchema", () => {
@@ -248,5 +253,247 @@ describe("shelfBooksSchema", () => {
       query: "Foundation",
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("ratingLiteralSchema", () => {
+  it("accepts 1-5", () => {
+    for (const value of [1, 2, 3, 4, 5] as const) {
+      expect(ratingLiteralSchema.safeParse(value).success).toBe(true);
+    }
+  });
+
+  it("rejects other numbers and non-integers", () => {
+    for (const value of [0, 6, 3.5, -1]) {
+      expect(ratingLiteralSchema.safeParse(value).success).toBe(false);
+    }
+  });
+});
+
+describe("bookSchema", () => {
+  const validBook = {
+    author: "J.R.R. Tolkien",
+    finishedAt: "2024-01-15",
+    id: 1,
+    isbn: "9780547928227",
+    pages: 423,
+    rating: 5,
+    title: "The Hobbit",
+  } as const;
+
+  it("accepts a valid book", () => {
+    expect(bookSchema.safeParse(validBook).success).toBe(true);
+  });
+
+  it("rejects a missing id", () => {
+    const { id: _id, ...rest } = validBook;
+    expect(bookSchema.safeParse(rest).success).toBe(false);
+  });
+
+  it("rejects an out-of-range rating", () => {
+    expect(bookSchema.safeParse({ ...validBook, rating: 6 }).success).toBe(
+      false
+    );
+  });
+});
+
+describe("bookFormSchema", () => {
+  const validFormValues = {
+    author: "J.R.R. Tolkien",
+    isbn: "9780547928227",
+    pages: "423",
+    rating: 5,
+    title: "The Hobbit",
+  } as const;
+
+  it("accepts valid form values", () => {
+    expect(bookFormSchema.safeParse(validFormValues).success).toBe(true);
+  });
+
+  it("rejects an empty title", () => {
+    expect(
+      bookFormSchema.safeParse({ ...validFormValues, title: "" }).success
+    ).toBe(false);
+  });
+
+  it("rejects a whitespace-only title", () => {
+    expect(
+      bookFormSchema.safeParse({ ...validFormValues, title: "   " }).success
+    ).toBe(false);
+  });
+
+  it("rejects a title exceeding max length", () => {
+    expect(
+      bookFormSchema.safeParse({
+        ...validFormValues,
+        title: "x".repeat(MAX_TITLE_LENGTH + 1),
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects an empty author", () => {
+    expect(
+      bookFormSchema.safeParse({ ...validFormValues, author: "" }).success
+    ).toBe(false);
+  });
+
+  it("rejects an author exceeding max length", () => {
+    expect(
+      bookFormSchema.safeParse({
+        ...validFormValues,
+        author: "x".repeat(MAX_AUTHOR_LENGTH + 1),
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects an empty ISBN", () => {
+    expect(
+      bookFormSchema.safeParse({ ...validFormValues, isbn: "" }).success
+    ).toBe(false);
+  });
+
+  it("rejects an invalid ISBN (letters)", () => {
+    expect(
+      bookFormSchema.safeParse({ ...validFormValues, isbn: "abc" }).success
+    ).toBe(false);
+  });
+
+  it("rejects an invalid ISBN (wrong digit count)", () => {
+    expect(
+      bookFormSchema.safeParse({
+        ...validFormValues,
+        isbn: "123456789",
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts an ISBN with dashes and spaces", () => {
+    expect(
+      bookFormSchema.safeParse({
+        ...validFormValues,
+        isbn: "978-0 306 40615 7",
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects empty pages", () => {
+    expect(
+      bookFormSchema.safeParse({ ...validFormValues, pages: "" }).success
+    ).toBe(false);
+  });
+
+  it("rejects non-integer pages", () => {
+    expect(
+      bookFormSchema.safeParse({ ...validFormValues, pages: "42.5" }).success
+    ).toBe(false);
+  });
+
+  it("rejects pages below 1", () => {
+    expect(
+      bookFormSchema.safeParse({ ...validFormValues, pages: "0" }).success
+    ).toBe(false);
+  });
+
+  it("rejects pages above max", () => {
+    expect(
+      bookFormSchema.safeParse({
+        ...validFormValues,
+        pages: String(MAX_PAGES + 1),
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts pages at max", () => {
+    expect(
+      bookFormSchema.safeParse({
+        ...validFormValues,
+        pages: String(MAX_PAGES),
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects a null rating", () => {
+    expect(
+      bookFormSchema.safeParse({ ...validFormValues, rating: null }).success
+    ).toBe(false);
+  });
+
+  it("rejects an out-of-range rating", () => {
+    expect(
+      bookFormSchema.safeParse({ ...validFormValues, rating: 6 }).success
+    ).toBe(false);
+  });
+});
+
+describe("toNewBookInput", () => {
+  const validFormValues = {
+    author: "  J.R.R. Tolkien  ",
+    isbn: "978-0 306 40615 7",
+    pages: "423",
+    rating: 5,
+    title: "  The Hobbit  ",
+  } as const;
+
+  it("trims whitespace from title and author", () => {
+    const result = toNewBookInput(validFormValues);
+    expect(result.title).toBe("The Hobbit");
+    expect(result.author).toBe("J.R.R. Tolkien");
+  });
+
+  it("strips ISBN noise (dashes and spaces)", () => {
+    const result = toNewBookInput(validFormValues);
+    expect(result.isbn).toBe("9780306406157");
+  });
+
+  it("parses pages to a number", () => {
+    const result = toNewBookInput(validFormValues);
+    expect(result.pages).toBe(423);
+  });
+
+  it("preserves the rating literal", () => {
+    const result = toNewBookInput(validFormValues);
+    expect(result.rating).toBe(5);
+  });
+});
+
+describe("shelfPageSchema", () => {
+  const validPage = {
+    books: [
+      {
+        author: "J.R.R. Tolkien",
+        finishedAt: "2024-01-15",
+        id: 1,
+        isbn: "9780547928227",
+        pages: 423,
+        rating: 5,
+        title: "The Hobbit",
+      },
+    ],
+    nextCursor: "2024-01-15|1",
+    user: { id: "user-1", name: "alice" },
+  };
+
+  it("accepts a valid shelf page", () => {
+    expect(shelfPageSchema.safeParse(validPage).success).toBe(true);
+  });
+
+  it("accepts null nextCursor", () => {
+    expect(
+      shelfPageSchema.safeParse({ ...validPage, nextCursor: null }).success
+    ).toBe(true);
+  });
+
+  it("rejects a book with an out-of-range rating", () => {
+    expect(
+      shelfPageSchema.safeParse({
+        ...validPage,
+        books: [{ ...validPage.books[0], rating: 6 }],
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects a missing user", () => {
+    const { user: _user, ...rest } = validPage;
+    expect(shelfPageSchema.safeParse(rest).success).toBe(false);
   });
 });
