@@ -47,6 +47,17 @@
     },
     "seed:demo10m": {
       "cache": false
+    },
+    "test": {
+      "dependsOn": []
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "test:coverage": {
+      "dependsOn": [],
+      "outputs": ["coverage/**"]
     }
   }
 }

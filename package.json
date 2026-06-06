@@ -22,7 +22,11 @@
     "db:down": "turbo -F @pirxey-recruitment-task/db db:down",
     "db:seed:demo10m": "turbo -F @pirxey-recruitment-task/db seed:demo10m",
     "check": "ultracite check",
-    "fix": "ultracite fix"
+    "fix": "ultracite fix",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "test:coverage": "turbo run test:coverage",
+    "test:precommit": "ultracite check && turbo run check-types test --affected"
   },
   "dependencies": {
     "@pirxey-recruitment-task/env": "workspace:*",

@@ -18,7 +18,10 @@
     "db:watch": "docker compose up",
     "db:stop": "docker compose stop",
     "db:down": "docker compose down",
-    "seed:demo10m": "tsx src/seed-demo-10m.ts"
+    "seed:demo10m": "tsx src/seed-demo-10m.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@pirxey-recruitment-task/env": "workspace:*",
@@ -32,6 +35,7 @@
     "@types/pg": "catalog:",
     "drizzle-kit": "^0.31.8",
     "tsx": "^4.22.4",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

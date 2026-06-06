@@ -9,6 +9,7 @@ export default defineConfig({
     "apps/web/src/routeTree.gen.ts",
     "packages/ui/*",
     ".agents",
+    "**/tests/**",
   ],
   rules: {
     "no-barrel-file": ["error", { threshold: 250 }],

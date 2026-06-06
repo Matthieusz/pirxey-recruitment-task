@@ -9,7 +9,11 @@
       "default": "./src/*.ts"
     }
   },
-  "scripts": {},
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
   "dependencies": {
     "@pirxey-recruitment-task/db": "workspace:*",
     "@pirxey-recruitment-task/env": "workspace:*",
@@ -19,6 +23,7 @@
   },
   "devDependencies": {
     "@pirxey-recruitment-task/config": "workspace:*",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

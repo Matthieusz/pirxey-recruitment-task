@@ -24,3 +24,7 @@ catalog:
   "@types/react-dom": ^19.2.3
   drizzle-orm: ^0.45.1
   "@types/pg": ^8.16.0
+  "@testing-library/jest-dom": ^6.6.3
+  "@testing-library/user-event": ^14.6.1
+  "@vitest/coverage-v8": ^4.0.15
+  vitest: ^4.0.15

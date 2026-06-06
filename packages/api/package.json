@@ -9,7 +9,11 @@
       "default": "./src/*.ts"
     }
   },
-  "scripts": {},
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
   "dependencies": {
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
@@ -25,7 +29,9 @@
   },
   "devDependencies": {
     "@pirxey-recruitment-task/config": "workspace:*",
+    "@vitest/coverage-v8": "catalog:",
     "hono": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
