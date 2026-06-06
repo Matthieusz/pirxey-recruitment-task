@@ -11,6 +11,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov"],
     },
+    exclude: ["**/dist/**", "**/node_modules/**"],
     globals: false,
     restoreMocks: true,
   },
