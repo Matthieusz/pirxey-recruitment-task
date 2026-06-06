@@ -17,7 +17,6 @@ if (typeof window !== "undefined" && !window.customElements?.get("search")) {
   }
 }
 
-// Mock ResizeObserver for @tanstack/react-virtual
 globalThis.ResizeObserver = class ResizeObserver {
   // eslint-disable-next-line class-methods-use-this
   observe() {}

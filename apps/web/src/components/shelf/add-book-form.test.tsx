@@ -75,7 +75,6 @@ describe("AddBookForm", () => {
 
     expect(onAdd).toHaveBeenCalledWith(validInput);
 
-    // Form should collapse back
     expect(screen.getByText("Add a book you've finished")).toBeInTheDocument();
   });
 

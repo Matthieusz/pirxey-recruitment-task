@@ -118,7 +118,6 @@ export const useShelfPage = ({
     },
   });
 
-  // Clear any pending highlight timeouts on unmount.
   useEffect(
     () => () => {
       for (const timeout of highlightTimeouts.values()) {

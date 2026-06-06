@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-// Mock heavy dependencies before imports
 vi.mock("evlog", () => ({
   initLogger: vi.fn(),
 }));
@@ -15,9 +14,7 @@ vi.mock("evlog/hono", () => {
 });
 
 vi.mock("evlog/better-auth", () => ({
-  createAuthMiddleware: vi.fn(() => async () => {
-    // no-op
-  }),
+  createAuthMiddleware: vi.fn(() => () => {}),
 }));
 
 const authHandlerMock = vi.fn((_req: Request) => new Response("auth ok"));
@@ -85,13 +82,8 @@ describe("server app", () => {
       method: "POST",
     });
 
-    // The handler was called with the request
     expect(authHandlerMock).toHaveBeenCalledTimes(1);
-
-    // The route exists (not a 404)
     expect(res.status).not.toBe(404);
-
-    // The mocked handler returns "auth ok"
     const body = await res.text();
     expect(body).toBe("auth ok");
   });
