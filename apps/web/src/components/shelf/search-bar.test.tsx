@@ -15,7 +15,7 @@ describe("SearchBar", () => {
     ).toBeInTheDocument();
   });
 
-  it("calls onChange when user types", async () => {
+  it("calls onChange with typed value", async () => {
     const user = userEvent.setup();
     const inputRef = createRef<HTMLInputElement>();
     const onChange = vi.fn();
@@ -23,7 +23,12 @@ describe("SearchBar", () => {
 
     const input = screen.getByPlaceholderText("Search by title or author");
     await user.type(input, "Tolkien");
-    expect(onChange).toHaveBeenCalled();
+
+    // Controlled with value="" — each keystroke fires onChange with that single
+    // character since React resets the input to the `value` prop on re-render.
+    expect(onChange).toHaveBeenCalledTimes(7);
+    const values = onChange.mock.calls.map((c) => c[0]);
+    expect(values.join("")).toBe("Tolkien");
   });
 
   it("shows clear button when value is non-empty", () => {

@@ -6,61 +6,22 @@ afterEach(() => {
   cleanup();
 });
 
+// Polyfill for <search> element — valid HTML5 but jsdom doesn't recognise it.
+// Without this, React emits a stderr warning:
+// "The tag <search> is unrecognized in this browser."
+if (typeof window !== "undefined" && !window.customElements?.get("search")) {
+  try {
+    window.customElements.define("search", class extends HTMLElement {});
+  } catch {
+    // jsdom may already define it or not support customElements — safe to ignore
+  }
+}
+
 // Mock ResizeObserver for @tanstack/react-virtual
 globalThis.ResizeObserver = class ResizeObserver {
   // eslint-disable-next-line class-methods-use-this
-  disconnect(): void {
-    // no-op for jsdom
-  }
-
+  observe() {}
   // eslint-disable-next-line class-methods-use-this
-  unobserve(): void {
-    // no-op for jsdom
-  }
-
-  #callback: ResizeObserverCallback;
-
-  constructor(callback: ResizeObserverCallback) {
-    this.#callback = callback;
-  }
-
-  observe(_element: Element): void {
-    // no-op for jsdom
-  }
+  unobserve() {}
+  disconnect() {}
 };
-
-// Mock getBoundingClientRect for @tanstack/react-virtual
-Element.prototype.getBoundingClientRect = function getBoundingClientRect() {
-  return {
-    bottom: 800,
-    height: 800,
-    left: 0,
-    right: 1024,
-    toJSON: () => ({}),
-    top: 0,
-    width: 1024,
-    x: 0,
-    y: 0,
-  };
-};
-
-// Mock scrollIntoView (not implemented in jsdom)
-Element.prototype.scrollIntoView = function scrollIntoView() {
-  // no-op for jsdom
-};
-
-// Mock matchMedia for theme/media queries
-Object.defineProperty(window, "matchMedia", {
-  value: (query: string) => ({
-    addEventListener: () => {
-      // no-op for jsdom
-    },
-    dispatchEvent: () => false,
-    matches: false,
-    media: query,
-    removeEventListener: () => {
-      // no-op for jsdom
-    },
-  }),
-  writable: true,
-});
