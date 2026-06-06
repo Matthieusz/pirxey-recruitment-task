@@ -48,7 +48,7 @@ export const SearchBar = ({ inputRef, onChange, value }: SearchBarProps) => {
   };
 
   return (
-    <search aria-label="Search the shelf" className="block">
+    <div aria-label="Search the shelf" className="block" role="search">
       <div className="relative">
         <Search
           aria-hidden="true"
@@ -101,6 +101,6 @@ export const SearchBar = ({ inputRef, onChange, value }: SearchBarProps) => {
           </button>
         )}
       </div>
-    </search>
+    </div>
   );
 };

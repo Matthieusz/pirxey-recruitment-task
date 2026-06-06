@@ -12,6 +12,7 @@ export default defineConfig({
     "**/tests/**",
   ],
   rules: {
+    "jsx-a11y/prefer-tag-over-role": "off",
     "no-barrel-file": ["error", { threshold: 250 }],
   },
 });

@@ -6,17 +6,6 @@ afterEach(() => {
   cleanup();
 });
 
-// Polyfill for <search> element — valid HTML5 but jsdom doesn't recognise it.
-// Without this, React emits a stderr warning:
-// "The tag <search> is unrecognized in this browser."
-if (typeof window !== "undefined" && !window.customElements?.get("search")) {
-  try {
-    window.customElements.define("search", class extends HTMLElement {});
-  } catch {
-    // jsdom may already define it or not support customElements — safe to ignore
-  }
-}
-
 globalThis.ResizeObserver = class ResizeObserver {
   // eslint-disable-next-line class-methods-use-this
   observe() {}
