@@ -120,7 +120,7 @@ const HomeComponent = () => {
           Demo
         </span>
         <p className="text-[0.8125rem] text-ink-muted">
-          A shared public demo shelf — anyone can add books.{" "}
+          A public demo shelf — anyone can add books.{" "}
           <Link
             to="/login"
             className="font-medium text-ink underline underline-offset-2 transition-colors hover:text-magenta"
@@ -179,19 +179,6 @@ const HomeComponent = () => {
           totalBooks={books.length}
         />
       </div>
-
-      <footer className="mt-16 border-t border-hairline pt-6">
-        <p className="font-mono text-[0.75rem] text-ink-soft">
-          Shared demo shelf — books persist in Postgres.{" "}
-          <Link
-            to="/login"
-            className="underline underline-offset-2 transition-colors hover:text-ink"
-          >
-            Sign up
-          </Link>{" "}
-          to keep a permanent private shelf.
-        </p>
-      </footer>
     </main>
   );
 };

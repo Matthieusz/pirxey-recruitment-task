@@ -97,8 +97,8 @@ const Demo10MComponent = () => {
           10M Demo
         </span>
         <p className="text-[0.8125rem] text-ink-muted">
-          Backed by exactly 10,000,000 real Postgres rows after seeding. Search
-          runs server-side against title and author.
+          Seeded 10M rows. Search runs server-side against title and author.
+          Uses Tanstack Virtual to render it performantly.
         </p>
       </div>
 

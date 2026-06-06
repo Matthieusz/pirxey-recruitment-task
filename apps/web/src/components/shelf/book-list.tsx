@@ -208,11 +208,8 @@ export const BookList = ({
   }
 
   return (
-    <section aria-label="Book shelf">
-      <div
-        className="max-h-[72vh] overflow-auto border-y border-hairline"
-        ref={parentRef}
-      >
+    <section aria-label="Book shelf" className="border-t border-hairline">
+      <div className="max-h-[72vh] overflow-auto" ref={parentRef}>
         <ul
           className="relative w-full"
           style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
