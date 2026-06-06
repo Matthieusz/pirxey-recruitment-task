@@ -70,7 +70,11 @@ export const useShelfPage = ({
   const [newBookIds, setNewBookIds] = useState<ReadonlySet<number>>(
     () => new Set<number>()
   );
-  const highlightTimeoutsRef = useRef<Map<number, number>>(new Map());
+  const highlightTimeoutsRef = useRef<Map<number, number> | null>(null);
+  if (highlightTimeoutsRef.current === null) {
+    highlightTimeoutsRef.current = new Map();
+  }
+  const highlightTimeouts = highlightTimeoutsRef.current;
 
   // eslint-disable-next-line sort-keys -- queryKey/infer-first ordering required by @tanstack/react-query v5 generics
   const shelfQuery = useInfiniteQuery({
@@ -105,9 +109,9 @@ export const useShelfPage = ({
             next.delete(id);
             return next;
           });
-          highlightTimeoutsRef.current.delete(id);
+          highlightTimeouts.delete(id);
         }, NEW_BOOK_HIGHLIGHT_MS);
-        highlightTimeoutsRef.current.set(id, timeout);
+        highlightTimeouts.set(id, timeout);
       }
 
       queryClient.invalidateQueries({ queryKey: ["books", "shelf", name] });
@@ -115,16 +119,15 @@ export const useShelfPage = ({
   });
 
   // Clear any pending highlight timeouts on unmount.
-  useEffect(() => {
-    const timeouts = highlightTimeoutsRef.current;
-
-    return () => {
-      for (const timeout of timeouts.values()) {
+  useEffect(
+    () => () => {
+      for (const timeout of highlightTimeouts.values()) {
         window.clearTimeout(timeout);
       }
-      timeouts.clear();
-    };
-  }, []);
+      highlightTimeouts.clear();
+    },
+    [highlightTimeouts]
+  );
 
   const firstPage = shelfQuery.data?.pages[0];
   const user = firstPage?.user ?? null;

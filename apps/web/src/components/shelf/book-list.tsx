@@ -2,7 +2,7 @@ import type { Book } from "@pirxey-recruitment-task/api/validators/books";
 import { cn } from "@pirxey-recruitment-task/ui/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { SearchX } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
 import type { CSSProperties } from "react";
 
 import { RatingDisplay } from "./rating";
@@ -185,18 +185,31 @@ export const BookList = ({
   });
   const virtualRows = rowVirtualizer.getVirtualItems();
 
-  useEffect(() => {
-    const lastRow = virtualRows.at(-1);
-
-    if (
-      lastRow &&
-      lastRow.index >= books.length - 1 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
+  const handleScroll = useEffectEvent(() => {
+    if (!hasNextPage || isFetchingNextPage) {
+      return;
+    }
+    const parent = parentRef.current;
+    if (!parent) {
+      return;
+    }
+    const distanceToBottom =
+      parent.scrollHeight - parent.scrollTop - parent.clientHeight;
+    if (distanceToBottom <= parent.clientHeight) {
       onLoadMore?.();
     }
-  }, [books.length, hasNextPage, isFetchingNextPage, onLoadMore, virtualRows]);
+  });
+
+  useEffect(() => {
+    const parent = parentRef.current;
+    if (!parent) {
+      return;
+    }
+    parent.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      parent.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   if (totalBooks === 0) {
     return <EmptyShelf />;
