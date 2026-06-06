@@ -24,20 +24,8 @@ globalThis.ResizeObserver = class ResizeObserver {
     this.#callback = callback;
   }
 
-  observe(element: Element): void {
-    setTimeout(() => {
-      const rect = element.getBoundingClientRect();
-      this.#callback(
-        [
-          {
-            contentRect: rect as DOMRectReadOnly,
-            target: element,
-          } as ResizeObserverEntry,
-        ],
-        this
-      );
-    });
-    void id;
+  observe(_element: Element): void {
+    // no-op for jsdom
   }
 };
 
