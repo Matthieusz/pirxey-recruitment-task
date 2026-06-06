@@ -8,12 +8,12 @@ import z from "zod";
 
 import { authClient } from "@/lib/auth-client";
 
+import { AuthFieldError } from "./auth/auth-field";
 import {
   authFieldClassName,
-  authFieldLabelClassName,
   authFieldHelperClassName,
-  AuthFieldError,
-} from "./auth/auth-field";
+  authFieldLabelClassName,
+} from "./auth/auth-field-styles";
 
 interface BetterAuthError {
   readonly code?: string;

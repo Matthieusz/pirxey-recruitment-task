@@ -1,7 +1,9 @@
 import { cn } from "@pirxey-recruitment-task/ui/lib/utils";
 import { Search, X } from "lucide-react";
 import type { RefObject } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent } from "react";
+
+import { useIsMac } from "@/hooks/use-is-mac";
 
 interface SearchBarProps {
   readonly inputRef: RefObject<HTMLInputElement | null>;
@@ -10,46 +12,35 @@ interface SearchBarProps {
 }
 
 export const SearchBar = ({ inputRef, onChange, value }: SearchBarProps) => {
-  const [isMac, setIsMac] = useState(false);
+  const isMac = useIsMac();
 
-  useEffect(() => {
-    if (typeof navigator === "undefined") {
+  const handleKeyDown = useEffectEvent((event: KeyboardEvent) => {
+    const isModifier = isMac ? event.metaKey : event.ctrlKey;
+    const isK = event.key.toLowerCase() === "k";
+
+    if (isModifier && isK) {
+      event.preventDefault();
+      inputRef.current?.focus();
+      inputRef.current?.select();
       return;
     }
-    const platform = navigator.userAgent.toLowerCase();
-    setIsMac(platform.includes("mac"));
-  }, []);
 
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      const isModifier = isMac ? event.metaKey : event.ctrlKey;
-      const isK = event.key.toLowerCase() === "k";
-
-      if (isModifier && isK) {
+    if (event.key === "Escape" && document.activeElement === inputRef.current) {
+      if (value !== "") {
         event.preventDefault();
-        inputRef.current?.focus();
-        inputRef.current?.select();
+        onChange("");
         return;
       }
+      inputRef.current?.blur();
+    }
+  });
 
-      if (
-        event.key === "Escape" &&
-        document.activeElement === inputRef.current
-      ) {
-        if (value !== "") {
-          event.preventDefault();
-          onChange("");
-          return;
-        }
-        inputRef.current?.blur();
-      }
-    };
-
-    window.addEventListener("keydown", handler);
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener("keydown", handler);
+      window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [inputRef, isMac, onChange, value]);
+  }, []);
 
   const handleClear = () => {
     onChange("");
@@ -58,7 +49,7 @@ export const SearchBar = ({ inputRef, onChange, value }: SearchBarProps) => {
 
   return (
     <search aria-label="Search the shelf" className="block">
-      <form className="relative" onSubmit={(event) => event.preventDefault()}>
+      <div className="relative">
         <Search
           aria-hidden="true"
           className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-4 size-4 text-ink-soft"
@@ -89,7 +80,7 @@ export const SearchBar = ({ inputRef, onChange, value }: SearchBarProps) => {
               "font-mono text-[11px] text-ink-soft"
             )}
           >
-            <span className="text-[13px] leading-none">
+            <span className="text-[13px] leading-none" suppressHydrationWarning>
               {isMac ? "⌘" : "Ctrl"}
             </span>
             <span className="leading-none">K</span>
@@ -109,7 +100,7 @@ export const SearchBar = ({ inputRef, onChange, value }: SearchBarProps) => {
             <X aria-hidden="true" className="size-4" />
           </button>
         )}
-      </form>
+      </div>
     </search>
   );
 };
