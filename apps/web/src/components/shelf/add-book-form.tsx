@@ -209,6 +209,31 @@ export const AddBookForm = ({ onAdd }: AddBookFormProps) => {
   });
   collapseRef.current = collapse;
 
+  const handleSubmit = useCallback(() => {
+    void form.handleSubmit();
+  }, [form]);
+
+  useEffect(() => {
+    const formElement = formRef.current;
+    if (!formElement) {
+      return;
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Enter") {
+        return;
+      }
+      if (event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      event.preventDefault();
+      handleSubmit();
+    };
+    formElement.addEventListener("keydown", handleKeyDown);
+    return () => {
+      formElement.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleSubmit]);
+
   if (!isExpanded) {
     return <Trigger expand={expand} triggerRef={triggerRef} />;
   }
@@ -233,12 +258,6 @@ export const AddBookForm = ({ onAdd }: AddBookFormProps) => {
         "rounded-md border border-hairline bg-page-edge/30 p-5 md:p-6",
         "transition-colors"
       )}
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        void form.handleSubmit();
-      }}
       ref={formRef}
     >
       <div className="mb-5 flex items-baseline justify-between">
@@ -432,7 +451,8 @@ export const AddBookForm = ({ onAdd }: AddBookFormProps) => {
             "transition-colors hover:bg-magenta/90",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-magenta-soft/40 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
           )}
-          type="submit"
+          onClick={handleSubmit}
+          type="button"
         >
           Save book
         </button>

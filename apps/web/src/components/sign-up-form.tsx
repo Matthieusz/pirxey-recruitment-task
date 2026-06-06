@@ -2,7 +2,7 @@ import { cn } from "@pirxey-recruitment-task/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -101,6 +101,33 @@ export default function SignUpForm({
     passwordError: `${baseId}-password-error`,
   };
 
+  const handleSubmit = useCallback(() => {
+    void form.handleSubmit();
+  }, [form]);
+
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const formElement = formRef.current;
+    if (!formElement) {
+      return;
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Enter") {
+        return;
+      }
+      if (event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      event.preventDefault();
+      handleSubmit();
+    };
+    formElement.addEventListener("keydown", handleKeyDown);
+    return () => {
+      formElement.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleSubmit]);
+
   return (
     <div className="mx-auto w-full max-w-md">
       <header className="mb-8 md:mb-10">
@@ -114,16 +141,7 @@ export default function SignUpForm({
         </p>
       </header>
 
-      <form
-        aria-label="Start a shelf"
-        className="space-y-5"
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          void form.handleSubmit();
-        }}
-      >
+      <form aria-label="Start a shelf" className="space-y-5" ref={formRef}>
         {formError ? (
           <div
             aria-live="polite"
@@ -257,7 +275,8 @@ export default function SignUpForm({
             "disabled:cursor-not-allowed disabled:opacity-60"
           )}
           disabled={isSubmitting}
-          type="submit"
+          onClick={handleSubmit}
+          type="button"
         >
           {isSubmitting ? (
             <>
