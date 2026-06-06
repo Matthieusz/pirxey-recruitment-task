@@ -1,19 +1,9 @@
-import { Toaster } from "@pirxey-recruitment-task/ui/components/sonner";
 import type { QueryClient } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import {
-  HeadContent,
-  Outlet,
-  Scripts,
-  createRootRouteWithContext,
-} from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { createRootRouteWithContext } from "@tanstack/react-router";
 import { createMiddleware } from "@tanstack/react-start";
 import { evlogErrorHandler } from "evlog/nitro/v3";
 
-import { Navbar } from "@/components/navbar";
-import { ThemeMeta } from "@/components/theme-meta";
-import { ThemeProvider } from "@/components/theme-provider";
+import { RootDocument } from "@/components/root-document";
 import type { orpc } from "@/utils/orpc";
 
 import appCss from "../index.css?url";
@@ -22,33 +12,6 @@ export interface RouterAppContext {
   orpc: typeof orpc;
   queryClient: QueryClient;
 }
-
-const RootDocument = () => (
-  <html lang="en" suppressHydrationWarning>
-    <head>
-      <HeadContent />
-    </head>
-    <body>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="light"
-        disableTransitionOnChange
-        enableColorScheme
-        enableSystem
-      >
-        <ThemeMeta />
-        <div className="grid min-h-svh grid-rows-[auto_1fr] bg-paper text-ink">
-          <Navbar />
-          <Outlet />
-        </div>
-        <Toaster richColors />
-        <TanStackRouterDevtools position="bottom-left" />
-        <ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />
-        <Scripts />
-      </ThemeProvider>
-    </body>
-  </html>
-);
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
   component: RootDocument,
