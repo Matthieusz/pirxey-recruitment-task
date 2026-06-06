@@ -7,7 +7,7 @@ import { createContext } from "@pirxey-recruitment-task/api/context";
 import { appRouter } from "@pirxey-recruitment-task/api/routers/index";
 import { auth } from "@pirxey-recruitment-task/auth";
 import { env } from "@pirxey-recruitment-task/env/server";
-import { initLogger } from "evlog";
+import { initLogger, parseError } from "evlog";
 import { createAuthMiddleware } from "evlog/better-auth";
 import type { BetterAuthInstance } from "evlog/better-auth";
 import { evlog } from "evlog/hono";
@@ -16,7 +16,14 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 const handleError = (error: unknown) => {
-  console.error(error);
+  const parsed = parseError(error);
+  console.error(
+    JSON.stringify({
+      code: parsed.code,
+      error: parsed.message,
+      status: parsed.status,
+    })
+  );
 };
 
 export const createApp = () => {
