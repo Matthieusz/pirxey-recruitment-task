@@ -1,19 +1,50 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 import SignInForm from "@/components/sign-in-form";
 import SignUpForm from "@/components/sign-up-form";
+import { authClient } from "@/lib/auth-client";
 
 const RouteComponent = () => {
-  const [showSignIn, setShowSignIn] = useState(false);
+  const { data: session, isPending } = authClient.useSession();
+  const [mode, setMode] = useState<"signUp" | "signIn">("signUp");
 
-  return showSignIn ? (
-    <SignInForm onSwitchToSignUp={() => setShowSignIn(false)} />
-  ) : (
-    <SignUpForm onSwitchToSignIn={() => setShowSignIn(true)} />
+  useEffect(() => {
+    if (isPending) {
+      return;
+    }
+    const name = session?.user?.name;
+    if (name) {
+      void redirect({
+        params: { name },
+        to: "/shelf/$name",
+      });
+    }
+  }, [isPending, session]);
+
+  if (isPending || session?.user?.name) {
+    return (
+      <main
+        aria-busy="true"
+        className="mx-auto flex min-h-[60vh] w-full max-w-5xl items-center px-5 sm:px-8"
+      >
+        <p className="text-ink-muted text-[0.9375rem]">Loading…</p>
+      </main>
+    );
+  }
+
+  return (
+    <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14 md:py-20">
+      {mode === "signIn" ? (
+        <SignInForm onSwitchToSignUp={() => setMode("signUp")} />
+      ) : (
+        <SignUpForm onSwitchToSignIn={() => setMode("signIn")} />
+      )}
+    </main>
   );
 };
 
 export const Route = createFileRoute("/login")({
   component: RouteComponent,
+  head: () => ({ meta: [{ title: "Shelf — Sign in" }] }),
 });

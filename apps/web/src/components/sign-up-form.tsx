@@ -1,24 +1,49 @@
-import { Button } from "@pirxey-recruitment-task/ui/components/button";
-import { Input } from "@pirxey-recruitment-task/ui/components/input";
-import { Label } from "@pirxey-recruitment-task/ui/components/label";
+import { cn } from "@pirxey-recruitment-task/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
 import { authClient } from "@/lib/auth-client";
 
-import Loader from "./loader";
+import {
+  authFieldClassName,
+  authFieldLabelClassName,
+  authFieldHelperClassName,
+  AuthFieldError,
+} from "./auth/auth-field";
+
+interface BetterAuthError {
+  readonly code?: string;
+  readonly message?: string;
+  readonly status?: number;
+  readonly statusText?: string;
+}
+
+const describeAuthError = (error: BetterAuthError | undefined): string => {
+  if (!error) {
+    return "Something went wrong. Try again.";
+  }
+  if (error.message && error.message.trim().length > 0) {
+    return error.message;
+  }
+  if (error.statusText && error.statusText.trim().length > 0) {
+    return error.statusText;
+  }
+  return "Something went wrong. Try again.";
+};
 
 export default function SignUpForm({
   onSwitchToSignIn,
 }: {
-  onSwitchToSignIn: () => void;
+  readonly onSwitchToSignIn: () => void;
 }) {
-  const navigate = useNavigate({
-    from: "/",
-  });
-  const { isPending } = authClient.useSession();
+  const navigate = useNavigate();
+  const baseId = useId();
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -27,6 +52,8 @@ export default function SignUpForm({
       password: "",
     },
     onSubmit: async ({ value }) => {
+      setFormError(null);
+      setIsSubmitting(true);
       await authClient.signUp.email(
         {
           email: value.email,
@@ -34,142 +61,228 @@ export default function SignUpForm({
           password: value.password,
         },
         {
-          onError: (error) => {
-            toast.error(error.error.message || error.error.statusText);
+          onError: (ctx) => {
+            setFormError(describeAuthError(ctx.error));
           },
-          onSuccess: () => {
-            navigate({
+          onSuccess: async () => {
+            await navigate({
               params: { name: value.name },
               to: "/shelf/$name",
             });
-            toast.success("Sign up successful");
+            toast.success("Shelf started.");
           },
         }
       );
+      setIsSubmitting(false);
     },
     validators: {
       onSubmit: z.object({
-        email: z.email("Invalid email address"),
+        email: z.email("Enter a valid email address."),
         name: z
           .string()
-          .min(2, "Name must be at least 2 characters")
-          .max(100, "Name must be 100 characters or fewer"),
-        password: z.string().min(8, "Password must be at least 8 characters"),
+          .min(2, "Use at least 2 characters.")
+          .max(100, "Use 100 characters or fewer.")
+          .regex(
+            /^[a-zA-Z0-9_-]+$/u,
+            "Letters, digits, dashes, and underscores only."
+          ),
+        password: z.string().min(8, "Use at least 8 characters."),
       }),
     },
   });
 
-  if (isPending) {
-    return <Loader />;
-  }
+  const ids = {
+    email: `${baseId}-email`,
+    emailError: `${baseId}-email-error`,
+    name: `${baseId}-name`,
+    nameError: `${baseId}-name-error`,
+    nameHelp: `${baseId}-name-help`,
+    password: `${baseId}-password`,
+    passwordError: `${baseId}-password-error`,
+  };
 
   return (
-    <div className="mx-auto w-full mt-10 max-w-md p-6">
-      <h1 className="mb-6 text-center text-3xl font-bold">Create Account</h1>
+    <div className="mx-auto w-full max-w-md">
+      <header className="mb-8 md:mb-10">
+        <h1 className="text-3xl font-medium tracking-tight text-ink md:text-[2rem]">
+          Start a shelf
+        </h1>
+        <p className="mt-2 max-w-[55ch] text-[0.9375rem] text-ink-muted">
+          Claim a name —{" "}
+          <span className="font-mono text-ink-soft">/shelf/&lt;name&gt;</span>{" "}
+          is your address.
+        </p>
+      </header>
 
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          form.handleSubmit();
+        aria-label="Start a shelf"
+        className="space-y-5"
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void form.handleSubmit();
         }}
-        className="space-y-4"
       >
-        <div>
-          <form.Field name="name">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Name</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Your name (also your shelf URL)"
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </form.Field>
-        </div>
+        {formError ? (
+          <div
+            aria-live="polite"
+            className="rounded-md border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[0.8125rem] text-destructive"
+            role="alert"
+          >
+            {formError}
+          </div>
+        ) : null}
 
-        <div>
-          <form.Field name="email">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Email</Label>
-                <Input
-                  id={field.name}
+        <form.Field name="name">
+          {(field) => {
+            const hasError = field.state.meta.errors.length > 0;
+            const helpId = hasError ? undefined : ids.nameHelp;
+            return (
+              <div>
+                <label className={authFieldLabelClassName} htmlFor={ids.name}>
+                  Your name
+                </label>
+                <input
+                  aria-describedby={hasError ? ids.nameError : helpId}
+                  aria-invalid={hasError}
+                  aria-label="Your name"
+                  autoComplete="username"
+                  className={authFieldClassName}
+                  id={ids.name}
                   name={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  placeholder="e.g. ada"
+                  type="text"
+                  value={field.state.value}
+                />
+                {hasError ? (
+                  field.state.meta.errors.map((error) => (
+                    <AuthFieldError
+                      id={ids.nameError}
+                      key={error?.message}
+                      message={error?.message ?? ""}
+                    />
+                  ))
+                ) : (
+                  <p className={authFieldHelperClassName} id={ids.nameHelp}>
+                    Also the address of your shelf.
+                  </p>
+                )}
+              </div>
+            );
+          }}
+        </form.Field>
+
+        <form.Field name="email">
+          {(field) => {
+            const hasError = field.state.meta.errors.length > 0;
+            return (
+              <div>
+                <label className={authFieldLabelClassName} htmlFor={ids.email}>
+                  Email
+                </label>
+                <input
+                  aria-describedby={hasError ? ids.emailError : undefined}
+                  aria-invalid={hasError}
+                  aria-label="Email"
+                  autoComplete="email"
+                  className={authFieldClassName}
+                  id={ids.email}
+                  inputMode="email"
+                  name={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  placeholder="you@example.com"
                   type="email"
                   value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
                 />
                 {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
+                  <AuthFieldError
+                    id={ids.emailError}
+                    key={error?.message}
+                    message={error?.message ?? ""}
+                  />
                 ))}
               </div>
-            )}
-          </form.Field>
-        </div>
+            );
+          }}
+        </form.Field>
 
-        <div>
-          <form.Field name="password">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Password</Label>
-                <Input
-                  id={field.name}
+        <form.Field name="password">
+          {(field) => {
+            const hasError = field.state.meta.errors.length > 0;
+            return (
+              <div>
+                <label
+                  className={authFieldLabelClassName}
+                  htmlFor={ids.password}
+                >
+                  Password
+                </label>
+                <input
+                  aria-describedby={hasError ? ids.passwordError : undefined}
+                  aria-invalid={hasError}
+                  aria-label="Password"
+                  autoComplete="new-password"
+                  className={authFieldClassName}
+                  id={ids.password}
                   name={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  placeholder="At least 8 characters"
                   type="password"
                   value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
                 />
                 {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
+                  <AuthFieldError
+                    id={ids.passwordError}
+                    key={error?.message}
+                    message={error?.message ?? ""}
+                  />
                 ))}
               </div>
-            )}
-          </form.Field>
-        </div>
+            );
+          }}
+        </form.Field>
 
-        <form.Subscribe
-          selector={(state) => ({
-            canSubmit: state.canSubmit,
-            isSubmitting: state.isSubmitting,
-          })}
-        >
-          {({ canSubmit, isSubmitting }) => (
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={!canSubmit || isSubmitting}
-            >
-              {isSubmitting ? "Submitting..." : "Sign Up"}
-            </Button>
+        <button
+          className={cn(
+            "mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-md",
+            "bg-magenta px-4 text-[0.9375rem] font-medium text-paper",
+            "transition-colors duration-150",
+            "hover:bg-magenta/90",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-magenta-soft/40 focus-visible:ring-offset-2 focus-visible:ring-offset-paper",
+            "disabled:cursor-not-allowed disabled:opacity-60"
           )}
-        </form.Subscribe>
+          disabled={isSubmitting}
+          type="submit"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              <span>Creating shelf</span>
+            </>
+          ) : (
+            <span>Start shelf</span>
+          )}
+        </button>
       </form>
 
-      <div className="mt-4 text-center">
-        <Button
-          variant="link"
+      <div className="mt-6 flex items-center gap-2 text-[0.8125rem] text-ink-muted">
+        <span>Already have one?</span>
+        <button
+          className={cn(
+            "rounded-sm font-medium text-ink underline-offset-4 transition-colors",
+            "hover:text-magenta hover:underline",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-magenta-soft/40"
+          )}
           onClick={onSwitchToSignIn}
-          className="text-indigo-600 hover:text-indigo-800"
+          type="button"
         >
-          Already have an account? Sign In
-        </Button>
+          Sign in
+        </button>
       </div>
     </div>
   );
