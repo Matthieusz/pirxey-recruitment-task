@@ -20,9 +20,11 @@ vi.mock("evlog/better-auth", () => ({
   }),
 }));
 
+const authHandlerMock = vi.fn((_req: Request) => new Response("auth ok"));
+
 vi.mock("@pirxey-recruitment-task/auth", () => ({
   auth: {
-    handler: vi.fn((_req: Request) => new Response("auth ok")),
+    handler: authHandlerMock,
   },
 }));
 
@@ -83,6 +85,14 @@ describe("server app", () => {
       method: "POST",
     });
 
+    // The handler was called with the request
+    expect(authHandlerMock).toHaveBeenCalledTimes(1);
+
+    // The route exists (not a 404)
     expect(res.status).not.toBe(404);
+
+    // The mocked handler returns "auth ok"
+    const body = await res.text();
+    expect(body).toBe("auth ok");
   });
 });
