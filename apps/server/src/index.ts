@@ -1,4 +1,3 @@
-import { serve } from "@hono/node-server";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";
@@ -16,84 +15,103 @@ import type { EvlogVariables } from "evlog/hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
-initLogger({
-  env: { service: "pirxey-recruitment-task-server" },
-});
-
-const identifyUser = createAuthMiddleware(auth as BetterAuthInstance, {
-  exclude: ["/api/auth/**"],
-  maskEmail: true,
-});
-
-const app = new Hono<EvlogVariables>();
-
-app.use(evlog());
-app.use("*", async (c, next) => {
-  await identifyUser(c.get("log"), c.req.raw.headers, c.req.path);
-  await next();
-});
-
-app.use(
-  "/*",
-  cors({
-    allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["GET", "POST", "OPTIONS"],
-    credentials: true,
-    origin: env.CORS_ORIGIN,
-  })
-);
-
-app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
-
 const handleError = (error: unknown) => {
   console.error(error);
 };
 
-export const apiHandler = new OpenAPIHandler(appRouter, {
-  interceptors: [onError(handleError)],
-  plugins: [
-    new OpenAPIReferencePlugin({
-      schemaConverters: [new ZodToJsonSchemaConverter()],
-    }),
-  ],
-});
+export const createApp = () => {
+  const app = new Hono<EvlogVariables>();
 
-export const rpcHandler = new RPCHandler(appRouter, {
-  interceptors: [onError(handleError)],
-});
+  app.use(evlog());
 
-app.use("/*", async (c, next) => {
-  const context = await createContext({ context: c });
-
-  const rpcResult = await rpcHandler.handle(c.req.raw, {
-    context,
-    prefix: "/rpc",
+  const identifyUser = createAuthMiddleware(auth as BetterAuthInstance, {
+    exclude: ["/api/auth/**"],
+    maskEmail: true,
   });
 
-  if (rpcResult.matched) {
-    return c.newResponse(rpcResult.response.body, rpcResult.response);
-  }
-
-  const apiResult = await apiHandler.handle(c.req.raw, {
-    context,
-    prefix: "/api-reference",
+  app.use("*", async (c, next) => {
+    await identifyUser(c.get("log"), c.req.raw.headers, c.req.path);
+    await next();
   });
 
-  if (apiResult.matched) {
-    return c.newResponse(apiResult.response.body, apiResult.response);
-  }
+  app.use(
+    "/*",
+    cors({
+      allowHeaders: ["Content-Type", "Authorization"],
+      allowMethods: ["GET", "POST", "OPTIONS"],
+      credentials: true,
+      origin: env.CORS_ORIGIN,
+    })
+  );
 
-  await next();
-});
+  app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
-app.get("/", (c) => c.text("OK"));
+  const apiHandler = new OpenAPIHandler(appRouter, {
+    interceptors: [onError(handleError)],
+    plugins: [
+      new OpenAPIReferencePlugin({
+        schemaConverters: [new ZodToJsonSchemaConverter()],
+      }),
+    ],
+  });
 
-serve(
-  {
-    fetch: app.fetch,
-    port: 3000,
-  },
-  (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`);
-  }
-);
+  const rpcHandler = new RPCHandler(appRouter, {
+    interceptors: [onError(handleError)],
+  });
+
+  app.use("/*", async (c, next) => {
+    const context = await createContext({ context: c });
+
+    const rpcResult = await rpcHandler.handle(c.req.raw, {
+      context,
+      prefix: "/rpc",
+    });
+
+    if (rpcResult.matched) {
+      return c.newResponse(rpcResult.response.body, rpcResult.response);
+    }
+
+    const apiResult = await apiHandler.handle(c.req.raw, {
+      context,
+      prefix: "/api-reference",
+    });
+
+    if (apiResult.matched) {
+      return c.newResponse(apiResult.response.body, apiResult.response);
+    }
+
+    await next();
+  });
+
+  app.get("/", (c) => c.text("OK"));
+
+  return app;
+};
+
+// Only start the server when this module is the entrypoint (not in tests)
+const isMainModule =
+  typeof process !== "undefined" &&
+  process.argv[1] &&
+  (process.argv[1].endsWith("/apps/server/src/index.ts") ||
+    process.argv[1].endsWith("/server/src/index.ts") ||
+    process.argv[1].includes("/tsx"));
+
+if (isMainModule) {
+  initLogger({
+    env: { service: "pirxey-recruitment-task-server" },
+  });
+
+  const app = createApp();
+
+  const { serve } = await import("@hono/node-server");
+
+  serve(
+    {
+      fetch: app.fetch,
+      port: 3000,
+    },
+    (info) => {
+      console.log(`Server is running on http://localhost:${info.port}`);
+    }
+  );
+}
