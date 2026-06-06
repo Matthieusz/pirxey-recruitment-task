@@ -56,8 +56,8 @@ Existing code and patterns to reuse:
 - Request context: `packages/api/src/context.ts` already loads the Better Auth session from request headers.
 - Auth backend: `packages/auth/src/index.ts` already configures Better Auth with Drizzle and email/password.
 - Database wiring: `packages/db/src/index.ts` already exports `db` and `createDb()`.
-- oRPC router shape: `packages/api/src/routers/todo.ts` shows the existing router pattern.
-- Frontend oRPC query/mutation setup: `apps/web/src/utils/orpc.ts` and `apps/web/src/routes/todos.tsx`.
+- oRPC router shape: `packages/api/src/routers/books.ts` shows the existing router pattern.
+- Frontend oRPC query/mutation setup: `apps/web/src/utils/orpc.ts` and `apps/web/src/routes/shelf/$name.tsx`.
 - Existing shelf UI components: `apps/web/src/components/shelf/*`.
 - Existing auth UI scaffolding: `apps/web/src/components/sign-in-form.tsx`, `sign-up-form.tsx`, `user-menu.tsx`, and `apps/web/src/routes/_auth/route.tsx`.
 

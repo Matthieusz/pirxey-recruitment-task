@@ -162,16 +162,14 @@ pnpm run dev
 │   │   └── src/
 │   │       ├── routers/
 │   │       │   ├── index.ts    # App router
-│   │       │   ├── books.ts    # Book CRUD + public shelf lookup
-│   │       │   └── todo.ts     # Legacy scaffold (unused)
+│   │       │   └── books.ts    # Book CRUD + public shelf lookup
 │   │       └── validators/
 │   │           └── books.ts    # Shared Zod validators
 │   ├── auth/                   # Better-Auth configuration
 │   ├── db/                     # Drizzle schema & DB connection
 │   │   └── src/schema/
 │   │       ├── auth.ts         # User, session, account, verification
-│   │       ├── books.ts        # Books table
-│   │       └── todo.ts         # Legacy scaffold (unused)
+│   │       └── books.ts        # Books table
 │   ├── env/                    # Type-safe environment variables
 │   └── ui/                     # Shared shadcn/ui components
 └── ...
@@ -224,21 +222,19 @@ pnpm run dev
 
 ## Loose Ends & Notes
 
-1. **Scaffold remnants:** The `todo` table and `todoRouter` from the initial scaffold are still present in the backend (`packages/db/src/schema/todo.ts` and `packages/api/src/routers/todo.ts`). The frontend routes for todos and dashboard have been removed. The backend code is harmless but can be removed for production.
+1. **ISBN validation:** The API validates ISBN length (10 or 13 digits) but does not perform checksum verification (Luhn for ISBN-10, weighted sum for ISBN-13). A real app would validate the check digit.
 
-2. **ISBN validation:** The API validates ISBN length (10 or 13 digits) but does not perform checksum verification (Luhn for ISBN-10, weighted sum for ISBN-13). A real app would validate the check digit.
+2. **Username enforcement:** Username uniqueness is enforced at the database level (unique constraint) and via Better-Auth's additional fields. The sign-up form validates character constraints but there's no dedicated API endpoint for checking username availability before submit.
 
-3. **Username enforcement:** Username uniqueness is enforced at the database level (unique constraint) and via Better-Auth's additional fields. The sign-up form validates character constraints but there's no dedicated API endpoint for checking username availability before submit.
+3. **Session user data:** The `username` field is available in the Better-Auth session via the `additionalFields` configuration. The frontend accesses it via `session.user.username` (cast). This works with the current Better-Auth version but may need adjustment on upgrade.
 
-4. **Session user data:** The `username` field is available in the Better-Auth session via the `additionalFields` configuration. The frontend accesses it via `session.user.username` (cast). This works with the current Better-Auth version but may need adjustment on upgrade.
+4. **No email verification:** Better-Auth's email verification plugin is not enabled. Users can sign up and immediately use the app without verifying their email.
 
-5. **No email verification:** Better-Auth's email verification plugin is not enabled. Users can sign up and immediately use the app without verifying their email.
+5. **No password reset:** There's no "forgot password" flow. Better-Auth supports it via a plugin.
 
-6. **No password reset:** There's no "forgot password" flow. Better-Auth supports it via a plugin.
+6. **Demo route:** The `/` route uses mock data (`apps/web/src/data/books-mock.ts`) and in-memory React state. All books added there are lost on page reload. This is intentional — it's a demo.
 
-7. **Demo route:** The `/` route uses mock data (`apps/web/src/data/books-mock.ts`) and in-memory React state. All books added there are lost on page reload. This is intentional — it's a demo.
-
-8. **Testing:** Automated tests were not implemented within the scope of this task. The oRPC procedures and frontend components are structured to be testable: procedures accept typed inputs, validators are separated into their own module, and UI components accept callbacks.
+7. **Testing:** Automated tests were not implemented within the scope of this task. The oRPC procedures and frontend components are structured to be testable: procedures accept typed inputs, validators are separated into their own module, and UI components accept callbacks.
 
 ---
 
