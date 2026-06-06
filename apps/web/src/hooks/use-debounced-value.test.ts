@@ -68,11 +68,14 @@ describe("useDebouncedValue", () => {
   });
 
   it("clears timeout on unmount", () => {
+    const clearSpy = vi.spyOn(window, "clearTimeout");
     const { result, unmount } = renderHook(() =>
       useDebouncedValue("hello", 300)
     );
     expect(result.current).toBe("hello");
     unmount();
-    // Should not throw
+
+    expect(clearSpy).toHaveBeenCalled();
+    clearSpy.mockRestore();
   });
 });
