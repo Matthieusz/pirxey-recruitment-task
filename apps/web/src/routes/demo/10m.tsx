@@ -1,70 +1,42 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useRef } from "react";
 
 import { BookList } from "@/components/shelf/book-list";
 import { SearchBar } from "@/components/shelf/search-bar";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { client } from "@/utils/orpc";
+import { useShelfPage } from "@/hooks/use-shelf-page";
 
 const DEMO_USER_NAME = "demo-10m";
+const DEMO_TOTAL_ROWS = 10_000_000;
 const PAGE_SIZE = 50;
-
-const mapDbBook = (db: {
-  author: string;
-  finishedAt: string;
-  id: number;
-  isbn: string;
-  pages: number;
-  rating: number;
-  title: string;
-}) => ({
-  author: db.author,
-  finishedAt: db.finishedAt,
-  id: `b-${db.id}`,
-  isbn: db.isbn,
-  pages: db.pages,
-  rating: db.rating as 1 | 2 | 3 | 4 | 5,
-  title: db.title,
-});
 
 const Demo10MComponent = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState("");
-  const debouncedQuery = useDebouncedValue(query.trim(), 300);
 
-  const shelfQuery = useInfiniteQuery({
-    getNextPageParam: (page) => page?.nextCursor ?? undefined,
-    initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) =>
-      client.books.getShelfByName({
-        cursor: pageParam ?? undefined,
-        limit: PAGE_SIZE,
-        name: DEMO_USER_NAME,
-        query: debouncedQuery || undefined,
-      }),
-    queryKey: ["books", "demo-10m", debouncedQuery],
+  const {
+    books,
+    countLabel,
+    debouncedQuery,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    newBookIds,
+    query,
+    setQuery,
+    totalBooks,
+    user,
+  } = useShelfPage({
+    name: DEMO_USER_NAME,
+    pageSize: PAGE_SIZE,
+    totalCount: DEMO_TOTAL_ROWS,
   });
-
-  const firstPage = shelfQuery.data?.pages[0];
-  const rawBooks = useMemo(
-    () => shelfQuery.data?.pages.flatMap((page) => page?.books ?? []) ?? [],
-    [shelfQuery.data?.pages]
-  );
-  const books = useMemo(() => rawBooks.map(mapDbBook), [rawBooks]);
 
   const handleClearQuery = () => {
     setQuery("");
     searchInputRef.current?.focus();
   };
 
-  const hasNextPage = Boolean(shelfQuery.hasNextPage);
-  const totalBooksForState = debouncedQuery ? 1 : books.length;
-  const countLabel = debouncedQuery
-    ? `${books.length.toLocaleString()} title/author matches loaded${hasNextPage ? "+" : ""}`
-    : `${books.length.toLocaleString()} of 10,000,000 rows loaded${hasNextPage ? "+" : ""}`;
-
-  if (shelfQuery.isLoading) {
+  if (isLoading) {
     return (
       <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14 md:py-20">
         <p className="text-ink-muted">Loading the 10M row demo…</p>
@@ -72,7 +44,7 @@ const Demo10MComponent = () => {
     );
   }
 
-  if (!firstPage) {
+  if (!user) {
     return (
       <main className="mx-auto w-full max-w-5xl px-5 py-20 text-center">
         <h1 className="text-2xl font-medium text-ink">10M demo not seeded</h1>
@@ -129,12 +101,12 @@ const Demo10MComponent = () => {
         <BookList
           books={books}
           hasNextPage={hasNextPage}
-          isFetchingNextPage={shelfQuery.isFetchingNextPage}
-          newBookIds={new Set()}
+          isFetchingNextPage={isFetchingNextPage}
+          newBookIds={newBookIds}
           onClearQuery={handleClearQuery}
-          onLoadMore={() => shelfQuery.fetchNextPage()}
+          onLoadMore={fetchNextPage}
           query={debouncedQuery}
-          totalBooks={totalBooksForState}
+          totalBooks={totalBooks}
         />
       </div>
     </main>

@@ -1,10 +1,9 @@
+import type { Book } from "@pirxey-recruitment-task/api/validators/books";
 import { cn } from "@pirxey-recruitment-task/ui/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { SearchX } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
-
-import type { Book } from "@/data/books-mock";
 
 import { RatingDisplay } from "./rating";
 
@@ -158,7 +157,7 @@ interface BookListProps {
   readonly books: readonly Book[];
   readonly hasNextPage?: boolean;
   readonly isFetchingNextPage?: boolean;
-  readonly newBookIds: ReadonlySet<string>;
+  readonly newBookIds: ReadonlySet<number>;
   readonly onClearQuery: () => void;
   readonly onLoadMore?: () => void;
   readonly query: string;

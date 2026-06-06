@@ -1,79 +1,28 @@
+import {
+  bookFormSchema,
+  toNewBookInput,
+} from "@pirxey-recruitment-task/api/validators/books";
+import type {
+  BookFormValues,
+  NewBookInput,
+  Rating,
+} from "@pirxey-recruitment-task/api/validators/books";
 import { cn } from "@pirxey-recruitment-task/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
 import { AlertCircle, Plus } from "lucide-react";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import z from "zod";
 
 import { RatingInput } from "./rating";
 
-export interface NewBookInput {
-  readonly author: string;
-  readonly isbn: string;
-  readonly pages: number;
-  readonly rating: 1 | 2 | 3 | 4 | 5;
-  readonly title: string;
-}
+export type { NewBookInput };
 
 interface AddBookFormProps {
   readonly onAdd: (book: NewBookInput) => void;
 }
 
-const MAX_TITLE_LENGTH = 200;
-const MAX_AUTHOR_LENGTH = 200;
-const MAX_PAGES = 20_000;
-const ISBN_DIGITS_PATTERN = /^(?:\d{10}|\d{13})$/u;
-const ISBN_NOISE_PATTERN = /[-\s]/gu;
-
-const requiredTrimmedString = (fieldName: string) =>
-  z.string().refine((value) => value.trim() !== "", {
-    message: `${fieldName} is required.`,
-  });
-
-const ratingSchema = z.union([
-  z.literal(1),
-  z.literal(2),
-  z.literal(3),
-  z.literal(4),
-  z.literal(5),
-]);
-
-const bookFormSchema = z.object({
-  author: requiredTrimmedString("Author").max(
-    MAX_AUTHOR_LENGTH,
-    `Author must be ${MAX_AUTHOR_LENGTH} characters or fewer.`
-  ),
-  isbn: requiredTrimmedString("ISBN").refine(
-    (value) =>
-      ISBN_DIGITS_PATTERN.test(value.trim().replaceAll(ISBN_NOISE_PATTERN, "")),
-    { message: "ISBN must be 10 or 13 digits." }
-  ),
-  pages: requiredTrimmedString("Pages").refine(
-    (value) => {
-      const parsed = Number(value.trim());
-      return Number.isInteger(parsed) && parsed >= 1 && parsed <= MAX_PAGES;
-    },
-    {
-      message: `Pages must be a whole number between 1 and ${MAX_PAGES.toLocaleString()}.`,
-    }
-  ),
-  rating: z
-    .union([ratingSchema, z.null()])
-    .refine((value): value is z.infer<typeof ratingSchema> => value !== null, {
-      message: "Pick a rating from 1 to 5.",
-    }),
-  title: requiredTrimmedString("Title").max(
-    MAX_TITLE_LENGTH,
-    `Title must be ${MAX_TITLE_LENGTH} characters or fewer.`
-  ),
-});
-
-interface FormValues {
-  readonly author: string;
-  readonly isbn: string;
-  readonly pages: string;
-  readonly rating: 1 | 2 | 3 | 4 | 5 | null;
-  readonly title: string;
+interface FormValues extends BookFormValues {
+  readonly rating: Rating | null;
 }
 
 const defaultValues: FormValues = {
@@ -245,13 +194,7 @@ export const AddBookForm = ({ onAdd }: AddBookFormProps) => {
       if (!parsed.success) {
         return;
       }
-      onAdd({
-        author: parsed.data.author.trim(),
-        isbn: parsed.data.isbn.trim().replaceAll(ISBN_NOISE_PATTERN, ""),
-        pages: Number(parsed.data.pages.trim()),
-        rating: parsed.data.rating,
-        title: parsed.data.title.trim(),
-      });
+      onAdd(toNewBookInput(parsed.data));
       collapseRef.current();
     },
     validators: {

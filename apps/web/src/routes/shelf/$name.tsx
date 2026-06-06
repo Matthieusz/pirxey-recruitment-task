@@ -1,119 +1,50 @@
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
 import { createFileRoute, getRouteApi, notFound } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useRef } from "react";
 import { toast } from "sonner";
 
-import type { NewBookInput } from "@/components/shelf/add-book-form";
 import { AddBookForm } from "@/components/shelf/add-book-form";
 import { BookList } from "@/components/shelf/book-list";
 import { SearchBar } from "@/components/shelf/search-bar";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { authClient } from "@/lib/auth-client";
-import { client, orpc } from "@/utils/orpc";
+import { useShelfPage } from "@/hooks/use-shelf-page";
+import { orpc } from "@/utils/orpc";
 
-const NEW_BOOK_HIGHLIGHT_MS = 1400;
 const PAGE_SIZE = 50;
 const routeApi = getRouteApi("/shelf/$name");
 
-const mapDbBook = (db: {
-  author: string;
-  finishedAt: string;
-  id: number;
-  isbn: string;
-  pages: number;
-  rating: number;
-  title: string;
-}) => ({
-  author: db.author,
-  finishedAt: db.finishedAt,
-  id: `b-${db.id}`,
-  isbn: db.isbn,
-  pages: db.pages,
-  rating: db.rating as 1 | 2 | 3 | 4 | 5,
-  title: db.title,
-});
-
 const RouteComponent = () => {
   const { name } = routeApi.useParams();
-  const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState("");
-  const debouncedQuery = useDebouncedValue(query.trim(), 300);
-  const [newBookIds, setNewBookIds] = useState<ReadonlySet<string>>(
-    () => new Set<string>()
-  );
 
-  const { data: session } = authClient.useSession();
-  const isOwner = session?.user?.name === name;
-
-  const shelfQuery = useInfiniteQuery({
-    getNextPageParam: (page) => page?.nextCursor ?? undefined,
-    initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) =>
-      client.books.getShelfByName({
-        cursor: pageParam ?? undefined,
-        limit: PAGE_SIZE,
-        name,
-        query: debouncedQuery || undefined,
-      }),
-    queryKey: ["books", "shelf", name, debouncedQuery],
+  const {
+    books,
+    countLabel,
+    createBook,
+    debouncedQuery,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isOwner,
+    newBookIds,
+    query,
+    setQuery,
+    totalBooks,
+    user,
+  } = useShelfPage({
+    mutationFn: async (input) => (await orpc.books.create.call(input)) ?? null,
+    name,
+    onMutationError: (error) => {
+      toast.error(error.message);
+    },
+    pageSize: PAGE_SIZE,
   });
-
-  const createBook = useMutation(
-    orpc.books.create.mutationOptions({
-      onError: (error) => {
-        toast.error(error.message);
-      },
-      onSuccess: (inserted) => {
-        const newBookId = inserted ? `b-${inserted.id}` : null;
-        if (newBookId) {
-          setNewBookIds((prev) => new Set([...prev, newBookId]));
-          window.setTimeout(() => {
-            setNewBookIds((prev) => {
-              const next = new Set(prev);
-              next.delete(newBookId);
-              return next;
-            });
-          }, NEW_BOOK_HIGHLIGHT_MS);
-        }
-
-        queryClient.invalidateQueries({
-          queryKey: ["books", "shelf", name],
-        });
-      },
-    })
-  );
-
-  const firstPage = shelfQuery.data?.pages[0];
-  const userProfile = firstPage?.user;
-
-  const rawBooks = useMemo(
-    () => shelfQuery.data?.pages.flatMap((page) => page?.books ?? []) ?? [],
-    [shelfQuery.data?.pages]
-  );
-
-  const books = useMemo(() => rawBooks.map(mapDbBook), [rawBooks]);
-
-  const handleAdd = (input: NewBookInput) => {
-    createBook.mutate(input);
-  };
 
   const handleClearQuery = () => {
     setQuery("");
     searchInputRef.current?.focus();
   };
 
-  const hasNextPage = Boolean(shelfQuery.hasNextPage);
-  const totalBooksForState = debouncedQuery ? 1 : books.length;
-  const countLabel = debouncedQuery
-    ? `${books.length.toLocaleString()} matches loaded${hasNextPage ? "+" : ""}`
-    : `${books.length.toLocaleString()} books loaded${hasNextPage ? "+" : ""}`;
-
-  if (shelfQuery.isLoading) {
+  if (isLoading) {
     return (
       <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14 md:py-20">
         <p className="text-ink-muted">Loading shelf…</p>
@@ -121,7 +52,7 @@ const RouteComponent = () => {
     );
   }
 
-  if (!firstPage || !userProfile) {
+  if (!user) {
     throw notFound();
   }
 
@@ -130,7 +61,7 @@ const RouteComponent = () => {
       <header className="mb-10 flex items-baseline justify-between gap-4 md:mb-14">
         <div>
           <h1 className="text-3xl font-medium tracking-tight text-ink md:text-4xl">
-            {userProfile.name}&rsquo;s Shelf
+            {user.name}&rsquo;s Shelf
           </h1>
           <p className="mt-1.5 max-w-[55ch] text-[0.9375rem] text-ink-muted">
             A record of what&rsquo;s been read.
@@ -151,17 +82,17 @@ const RouteComponent = () => {
           value={query}
         />
 
-        {isOwner && <AddBookForm onAdd={handleAdd} />}
+        {isOwner && <AddBookForm onAdd={createBook.mutate} />}
 
         <BookList
           books={books}
           hasNextPage={hasNextPage}
-          isFetchingNextPage={shelfQuery.isFetchingNextPage}
+          isFetchingNextPage={isFetchingNextPage}
           newBookIds={newBookIds}
           onClearQuery={handleClearQuery}
-          onLoadMore={() => shelfQuery.fetchNextPage()}
+          onLoadMore={fetchNextPage}
           query={debouncedQuery}
-          totalBooks={totalBooksForState}
+          totalBooks={totalBooks}
         />
       </div>
     </main>

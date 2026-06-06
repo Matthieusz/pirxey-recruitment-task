@@ -1,8 +1,7 @@
+import type { Book } from "@pirxey-recruitment-task/api/validators/books";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-
-import type { Book } from "@/data/books-mock";
 
 import { BookList } from "./book-list";
 
@@ -32,7 +31,7 @@ vi.mock("@tanstack/react-virtual", () => ({
 const createBook = (overrides?: Partial<Book>): Book => ({
   author: "J.R.R. Tolkien",
   finishedAt: "2024-01-15",
-  id: "1",
+  id: 1,
   isbn: "9780547928227",
   pages: 423,
   rating: 5,
@@ -45,7 +44,7 @@ describe("BookList", () => {
     render(
       <BookList
         books={[]}
-        newBookIds={new Set()}
+        newBookIds={new Set<number>()}
         onClearQuery={vi.fn()}
         query=""
         totalBooks={0}
@@ -59,7 +58,7 @@ describe("BookList", () => {
     render(
       <BookList
         books={[]}
-        newBookIds={new Set()}
+        newBookIds={new Set<number>()}
         onClearQuery={vi.fn()}
         query="nonexistent"
         totalBooks={1}
@@ -75,7 +74,7 @@ describe("BookList", () => {
     render(
       <BookList
         books={[]}
-        newBookIds={new Set()}
+        newBookIds={new Set<number>()}
         onClearQuery={onClearQuery}
         query="nonexistent"
         totalBooks={1}
@@ -87,11 +86,11 @@ describe("BookList", () => {
   });
 
   it("renders book title and author", () => {
-    const books = [createBook({ id: "1", title: "The Hobbit" })];
+    const books = [createBook({ id: 1, title: "The Hobbit" })];
     render(
       <BookList
         books={books}
-        newBookIds={new Set()}
+        newBookIds={new Set<number>()}
         onClearQuery={vi.fn()}
         query=""
         totalBooks={1}
@@ -104,14 +103,14 @@ describe("BookList", () => {
 
   it("renders multiple books", () => {
     const books = [
-      createBook({ id: "1", title: "Book One" }),
-      createBook({ id: "2", title: "Book Two" }),
-      createBook({ id: "3", title: "Book Three" }),
+      createBook({ id: 1, title: "Book One" }),
+      createBook({ id: 2, title: "Book Two" }),
+      createBook({ id: 3, title: "Book Three" }),
     ];
     render(
       <BookList
         books={books}
-        newBookIds={new Set()}
+        newBookIds={new Set<number>()}
         onClearQuery={vi.fn()}
         query=""
         totalBooks={3}
@@ -124,11 +123,11 @@ describe("BookList", () => {
   });
 
   it("renders the shelf landmark", () => {
-    const books = [createBook({ id: "1" })];
+    const books = [createBook({ id: 1 })];
     render(
       <BookList
         books={books}
-        newBookIds={new Set()}
+        newBookIds={new Set<number>()}
         onClearQuery={vi.fn()}
         query=""
         totalBooks={1}
