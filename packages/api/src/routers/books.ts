@@ -74,8 +74,6 @@ const listBooksForUser = async (userId: string, input: ListBooksInput) => {
   };
 };
 
-// ---- demo-only helpers ----
-
 const DEMO_USER_ID = "demo";
 const DEMO_USER_NAME = "demo";
 const DEMO_USER_EMAIL = "demo@example.com";

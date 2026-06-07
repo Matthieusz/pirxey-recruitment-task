@@ -1,9 +1,5 @@
 import z from "zod";
 
-// ----------------------------------------------------------------------------
-// Shared constants
-// ----------------------------------------------------------------------------
-
 export const ISBN_NOISE_PATTERN = /[-\s]/gu;
 export const ISBN_DIGITS_PATTERN = /^\d{10}$|^\d{13}$/u;
 
@@ -12,10 +8,6 @@ export const MAX_AUTHOR_LENGTH = 200;
 export const MAX_PAGES = 20_000;
 export const MAX_BOOKS_PAGE_SIZE = 100;
 export const DEFAULT_BOOKS_PAGE_SIZE = 50;
-
-// ----------------------------------------------------------------------------
-// Primitives
-// ----------------------------------------------------------------------------
 
 /**
  * Rating is a closed set of integer literals — the form and the renderer both
@@ -41,10 +33,6 @@ export const isbnSchema = z
     message: "ISBN must be 10 or 13 digits.",
   });
 
-// ----------------------------------------------------------------------------
-// Book wire/render type
-// ----------------------------------------------------------------------------
-
 /**
  * Canonical Book — the shape returned by the API and rendered by the UI.
  * Identical to the form's NewBookInput plus an `id` and a `finishedAt` date
@@ -61,10 +49,6 @@ export const bookSchema = z.object({
   title: z.string(),
 });
 export type Book = z.infer<typeof bookSchema>;
-
-// ----------------------------------------------------------------------------
-// Create-book input (API procedure input)
-// ----------------------------------------------------------------------------
 
 /**
  * Create-book input: all fields required, with size/bounds checks matching the
@@ -95,10 +79,6 @@ export const createBookSchema = z.object({
 });
 export type NewBookInput = z.infer<typeof createBookSchema>;
 
-// ----------------------------------------------------------------------------
-// List pagination
-// ----------------------------------------------------------------------------
-
 /**
  * Optional search/query and cursor pagination parameters for listing books.
  */
@@ -113,10 +93,6 @@ export const listBooksSchema = z.object({
   query: z.string().max(200).optional(),
 });
 
-// ----------------------------------------------------------------------------
-// Public shelf lookup
-// ----------------------------------------------------------------------------
-
 /**
  * Name lookup for the public shelf endpoint.
  */
@@ -125,10 +101,6 @@ export const nameSchema = z.object({
 });
 
 export const shelfBooksSchema = nameSchema.merge(listBooksSchema);
-
-// ----------------------------------------------------------------------------
-// Form (raw string values + transform to NewBookInput)
-// ----------------------------------------------------------------------------
 
 const requiredTrimmedString = (fieldName: string) =>
   z.string().refine((value) => value.trim() !== "", {
@@ -187,10 +159,6 @@ export const toNewBookInput = (values: BookFormOutput): NewBookInput => ({
   rating: values.rating,
   title: values.title.trim(),
 });
-
-// ----------------------------------------------------------------------------
-// Shelf page (wire response)
-// ----------------------------------------------------------------------------
 
 export const shelfUserSchema = z.object({
   id: z.string(),

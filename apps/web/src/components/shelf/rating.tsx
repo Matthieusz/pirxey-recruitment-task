@@ -12,18 +12,25 @@ interface RatingDisplayProps {
 }
 
 export const RatingDisplay = ({ className, value }: RatingDisplayProps) => (
-  <span className={cn("inline-flex items-center gap-[3px]", className)}>
+  <span className={cn("inline-flex items-center gap-2", className)}>
     <span className="sr-only">Rated {value} of 5.</span>
-    {MARKS.map((mark) => (
-      <span
-        aria-hidden="true"
-        className={cn(
-          "block h-3.5 w-[2px] rounded-[1px]",
-          mark <= value ? "bg-magenta" : "bg-ink-soft/30"
-        )}
-        key={mark}
-      />
-    ))}
+    <span aria-hidden="true" className="inline-flex items-center gap-[3px]">
+      {MARKS.map((mark) => (
+        <span
+          className={cn(
+            "block h-3.5 w-[2.5px] rounded-[1px]",
+            mark <= value ? "bg-magenta" : "bg-ink-soft/40"
+          )}
+          key={mark}
+        />
+      ))}
+    </span>
+    <span
+      aria-hidden="true"
+      className="font-mono text-[0.75rem] leading-none tabular-nums text-ink-soft"
+    >
+      {value}/5
+    </span>
   </span>
 );
 

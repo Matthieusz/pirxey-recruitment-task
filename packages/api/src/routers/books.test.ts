@@ -1,10 +1,6 @@
 import { call } from "@orpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
 vi.mock("@pirxey-recruitment-task/env/server", () => ({
   env: {
     BETTER_AUTH_SECRET: "s".repeat(32),
@@ -53,10 +49,6 @@ vi.mock("@pirxey-recruitment-task/db", () => ({
   createDb: vi.fn(() => mockDb),
   db: mockDb,
 }));
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 /** Row as returned from the database (includes userId). */
 interface BookRow {
@@ -110,10 +102,6 @@ const authCtx = {
 };
 
 const anonCtx = { auth: null as null, session: null };
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe("booksRouter", () => {
   beforeEach(() => {
