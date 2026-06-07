@@ -39,8 +39,14 @@ interface ListBooksInput {
   readonly query?: string;
 }
 
-const titleAuthorSearchCondition = (query: string): SQL =>
-  sql`to_tsvector('simple', ${books.title} || ' ' || ${books.author}) @@ websearch_to_tsquery('simple', ${query})`;
+const escapeLikePattern = (value: string): string =>
+  value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
+
+const titleAuthorSearchCondition = (query: string): SQL => {
+  const containsPattern = `%${escapeLikePattern(query)}%`;
+
+  return sql`(to_tsvector('simple', ${books.title} || ' ' || ${books.author}) @@ websearch_to_tsquery('simple', ${query}) OR ${books.title} ILIKE ${containsPattern} ESCAPE '\\' OR ${books.author} ILIKE ${containsPattern} ESCAPE '\\')`;
+};
 
 const listBooksForUser = async (userId: string, input: ListBooksInput) => {
   const query = input.query?.trim();
