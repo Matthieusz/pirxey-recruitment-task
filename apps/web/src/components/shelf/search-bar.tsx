@@ -62,7 +62,9 @@ export const SearchBar = ({ inputRef, onChange, value }: SearchBarProps) => {
             "text-base text-ink placeholder:text-ink-soft",
             "transition-colors duration-150",
             "focus:bg-paper focus-visible:border-magenta-soft focus-visible:outline-none",
-            "focus-visible:ring-2 focus-visible:ring-magenta-soft/30 focus-visible:ring-offset-0"
+            "focus-visible:ring-2 focus-visible:ring-magenta-soft/30 focus-visible:ring-offset-0",
+            "[&::-webkit-search-cancel-button]:appearance-none",
+            "[&::-webkit-search-decoration]:appearance-none"
           )}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Search by title or author"
