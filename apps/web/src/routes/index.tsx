@@ -22,6 +22,7 @@ const HomeComponent = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isSearching,
     isLoading,
     newBookIds,
     query,
@@ -109,10 +110,12 @@ const HomeComponent = () => {
           books={books}
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
+          isSearching={isSearching}
           newBookIds={newBookIds}
           onClearQuery={handleClearQuery}
           onLoadMore={fetchNextPage}
           query={debouncedQuery}
+          rawQuery={query}
           totalBooks={totalBooks}
         />
       </div>

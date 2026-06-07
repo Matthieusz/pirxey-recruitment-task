@@ -24,6 +24,7 @@ export const ShelfRouteComponent = (): React.JSX.Element => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isSearching,
     isLoading,
     isOwner,
     newBookIds,
@@ -89,10 +90,12 @@ export const ShelfRouteComponent = (): React.JSX.Element => {
           books={books}
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
+          isSearching={isSearching}
           newBookIds={newBookIds}
           onClearQuery={handleClearQuery}
           onLoadMore={fetchNextPage}
           query={debouncedQuery}
+          rawQuery={query}
           totalBooks={totalBooks}
         />
       </div>

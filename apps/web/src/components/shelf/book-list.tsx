@@ -1,7 +1,7 @@
 import type { Book } from "@pirxey-recruitment-task/api/validators/books";
 import { cn } from "@pirxey-recruitment-task/ui/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { SearchX } from "lucide-react";
+import { LoaderCircle, SearchX } from "lucide-react";
 import { useEffect, useEffectEvent, useRef } from "react";
 import type { CSSProperties } from "react";
 
@@ -157,10 +157,13 @@ interface BookListProps {
   readonly books: readonly Book[];
   readonly hasNextPage?: boolean;
   readonly isFetchingNextPage?: boolean;
+  readonly isSearching?: boolean;
+  readonly minSearchLength?: number;
   readonly newBookIds: ReadonlySet<number>;
   readonly onClearQuery: () => void;
   readonly onLoadMore?: () => void;
   readonly query: string;
+  readonly rawQuery?: string;
   readonly totalBooks: number;
 }
 
@@ -168,10 +171,13 @@ export const BookList = ({
   books,
   hasNextPage = false,
   isFetchingNextPage = false,
+  isSearching = false,
+  minSearchLength = 1,
   newBookIds,
   onClearQuery,
   onLoadMore,
   query,
+  rawQuery,
   totalBooks,
 }: BookListProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -211,6 +217,10 @@ export const BookList = ({
     };
   }, []);
 
+  const trimmedQuery = (rawQuery ?? query).trim();
+  const isBelowMinimumSearchLength =
+    trimmedQuery.length > 0 && trimmedQuery.length < minSearchLength;
+
   if (totalBooks === 0) {
     return <EmptyShelf />;
   }
@@ -221,6 +231,24 @@ export const BookList = ({
 
   return (
     <section aria-label="Book shelf" className="border-t border-hairline">
+      {(isSearching || isBelowMinimumSearchLength) && (
+        <div
+          aria-live="polite"
+          className="flex items-center gap-2 border-b border-hairline bg-page-edge/35 px-4 py-2 text-[0.8125rem] text-ink-muted"
+        >
+          {isSearching && (
+            <LoaderCircle
+              aria-hidden="true"
+              className="size-3.5 animate-spin text-ink-soft"
+            />
+          )}
+          <span>
+            {isBelowMinimumSearchLength
+              ? `Type at least ${minSearchLength} characters to search this shelf.`
+              : "Searching books…"}
+          </span>
+        </div>
+      )}
       <div className="max-h-[72vh] overflow-auto" ref={parentRef}>
         <ul
           className="relative w-full"

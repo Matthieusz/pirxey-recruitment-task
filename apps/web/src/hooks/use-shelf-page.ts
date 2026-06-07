@@ -5,6 +5,7 @@ import type {
   ShelfUser,
 } from "@pirxey-recruitment-task/api/validators/books";
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQueryClient,
@@ -27,6 +28,8 @@ export interface UseShelfPageArgs {
   readonly pageSize?: number;
   /** When set, the count label reports "X of N rows loaded" (10M-row demo). */
   readonly totalCount?: number;
+  /** Minimum trimmed query length before applying server-side search. */
+  readonly minSearchLength?: number;
   /**
    * Mutation function. If omitted, the hook still creates a no-op mutation so
    * that routes can choose whether to mount the form by rendering or not.
@@ -42,6 +45,7 @@ export interface UseShelfPageResult {
   readonly isLoading: boolean;
   readonly hasNextPage: boolean;
   readonly isFetchingNextPage: boolean;
+  readonly isSearching: boolean;
   readonly fetchNextPage: () => void;
   readonly query: string;
   readonly setQuery: (q: string) => void;
@@ -61,12 +65,15 @@ export const useShelfPage = ({
   name,
   pageSize = DEFAULT_PAGE_SIZE,
   totalCount,
+  minSearchLength = 1,
   mutationFn,
   onMutationError,
 }: UseShelfPageArgs): UseShelfPageResult => {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query.trim(), 300);
+  const effectiveQuery =
+    debouncedQuery.length >= minSearchLength ? debouncedQuery : "";
   const [newBookIds, setNewBookIds] = useState<ReadonlySet<number>>(
     () => new Set<number>()
   );
@@ -78,15 +85,19 @@ export const useShelfPage = ({
 
   // eslint-disable-next-line sort-keys -- queryKey/infer-first ordering required by @tanstack/react-query v5 generics
   const shelfQuery = useInfiniteQuery({
-    queryKey: ["books", "shelf", name, debouncedQuery],
+    queryKey: ["books", "shelf", name, effectiveQuery],
     initialPageParam: null as string | null,
-    queryFn: async ({ pageParam }) => {
-      const page = await client.books.getShelfByName({
-        cursor: pageParam ?? undefined,
-        limit: pageSize,
-        name,
-        query: debouncedQuery || undefined,
-      });
+    placeholderData: keepPreviousData,
+    queryFn: async ({ pageParam, signal }) => {
+      const page = await client.books.getShelfByName(
+        {
+          cursor: pageParam ?? undefined,
+          limit: pageSize,
+          name,
+          query: effectiveQuery || undefined,
+        },
+        { signal }
+      );
 
       return page ? shelfPageSchema.parse(page) : null;
     },
@@ -136,17 +147,23 @@ export const useShelfPage = ({
   );
   const hasNextPage = Boolean(shelfQuery.hasNextPage);
   const { isFetchingNextPage } = shelfQuery;
+  const trimmedQuery = query.trim();
+  const isSearchEligible =
+    trimmedQuery.length >= minSearchLength && effectiveQuery !== "";
+  const isSearching =
+    (isSearchEligible && trimmedQuery !== effectiveQuery) ||
+    (isSearchEligible && shelfQuery.isFetching && !isFetchingNextPage);
 
   // `totalBooks` distinguishes "empty shelf" (0) from "no search matches" (≥1).
   // When searching, force a non-zero floor so the BookList shows the
   // no-matches state instead of the empty state.
-  const totalBooks = debouncedQuery && books.length === 0 ? 1 : books.length;
+  const totalBooks = effectiveQuery && books.length === 0 ? 1 : books.length;
 
   const countLabel = useMemo(() => {
     const suffix = hasNextPage ? "+" : "";
     const loaded = books.length.toLocaleString();
 
-    if (debouncedQuery) {
+    if (effectiveQuery) {
       return totalCount
         ? `${loaded} title/author matches loaded${suffix}`
         : `${loaded} matches loaded${suffix}`;
@@ -157,18 +174,19 @@ export const useShelfPage = ({
     }
 
     return `${loaded} books loaded${suffix}`;
-  }, [books.length, debouncedQuery, hasNextPage, totalCount]);
+  }, [books.length, effectiveQuery, hasNextPage, totalCount]);
 
   return {
     books,
     countLabel,
     createBook,
-    debouncedQuery,
+    debouncedQuery: effectiveQuery,
     fetchNextPage: () => shelfQuery.fetchNextPage(),
     hasNextPage,
     isFetchingNextPage,
     isLoading: shelfQuery.isLoading,
     isOwner,
+    isSearching,
     newBookIds,
     query,
     setQuery,

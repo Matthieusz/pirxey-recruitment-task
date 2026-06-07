@@ -8,6 +8,7 @@ import { useShelfPage } from "@/hooks/use-shelf-page";
 const DEMO_USER_NAME = "demo-10m";
 const DEMO_TOTAL_ROWS = 10_000_000;
 const PAGE_SIZE = 50;
+const MIN_SEARCH_LENGTH = 3;
 
 const Demo10MComponent = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -19,6 +20,7 @@ const Demo10MComponent = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isSearching,
     isLoading,
     newBookIds,
     query,
@@ -26,6 +28,7 @@ const Demo10MComponent = () => {
     totalBooks,
     user,
   } = useShelfPage({
+    minSearchLength: MIN_SEARCH_LENGTH,
     name: DEMO_USER_NAME,
     pageSize: PAGE_SIZE,
     totalCount: DEMO_TOTAL_ROWS,
@@ -102,10 +105,13 @@ const Demo10MComponent = () => {
           books={books}
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
+          isSearching={isSearching}
+          minSearchLength={MIN_SEARCH_LENGTH}
           newBookIds={newBookIds}
           onClearQuery={handleClearQuery}
           onLoadMore={fetchNextPage}
           query={debouncedQuery}
+          rawQuery={query}
           totalBooks={totalBooks}
         />
       </div>
