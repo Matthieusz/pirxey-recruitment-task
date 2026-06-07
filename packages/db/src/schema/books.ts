@@ -41,6 +41,14 @@ export const books = pgTable(
       "gin",
       sql`to_tsvector('simple', ${table.title} || ' ' || ${table.author})`
     ),
+    index("books_title_trgm_idx").using(
+      "gin",
+      sql`${table.title} gin_trgm_ops`
+    ),
+    index("books_author_trgm_idx").using(
+      "gin",
+      sql`${table.author} gin_trgm_ops`
+    ),
   ]
 );
 
