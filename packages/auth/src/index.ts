@@ -11,8 +11,8 @@ export const createAuth = () => {
     advanced: {
       defaultCookieAttributes: {
         httpOnly: true,
-        sameSite: "none",
-        secure: true,
+        sameSite: env.NODE_ENV === "production" ? "none" : "lax",
+        secure: env.NODE_ENV === "production",
       },
     },
     baseURL: env.BETTER_AUTH_URL,

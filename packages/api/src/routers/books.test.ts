@@ -51,7 +51,7 @@ vi.mock("@pirxey-recruitment-task/db", () => ({
 }));
 
 /** Row as returned from the database (includes userId). */
-interface BookRow {
+interface BookRow extends Record<string, unknown> {
   author: string;
   finishedAt: string;
   id: number;
@@ -97,8 +97,25 @@ const validBook = {
 } as const;
 
 const authCtx = {
-  auth: null as null,
-  session: { user: { id: "user-1" } },
+  auth: null,
+  session: {
+    session: {
+      createdAt: new Date("2024-01-01T00:00:00Z"),
+      expiresAt: new Date("2024-01-02T00:00:00Z"),
+      id: "session-1",
+      token: "token-1",
+      updatedAt: new Date("2024-01-01T00:00:00Z"),
+      userId: "user-1",
+    },
+    user: {
+      createdAt: new Date("2024-01-01T00:00:00Z"),
+      email: "user@example.com",
+      emailVerified: true,
+      id: "user-1",
+      name: "reader",
+      updatedAt: new Date("2024-01-01T00:00:00Z"),
+    },
+  },
 };
 
 const anonCtx = { auth: null as null, session: null };

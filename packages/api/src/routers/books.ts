@@ -39,13 +39,24 @@ interface ListBooksInput {
   readonly query?: string;
 }
 
-const escapeLikePattern = (value: string): string =>
-  value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
+const SEARCH_TOKEN_PATTERN = /[\p{L}\p{N}]+/gu;
 
-const titleAuthorSearchCondition = (query: string): SQL => {
-  const containsPattern = `%${escapeLikePattern(query)}%`;
+const toPrefixTsQuery = (query: string): string | null => {
+  const tokens = query.match(SEARCH_TOKEN_PATTERN);
+  if (!tokens || tokens.length === 0) {
+    return null;
+  }
 
-  return sql`(to_tsvector('simple', ${books.title} || ' ' || ${books.author}) @@ websearch_to_tsquery('simple', ${query}) OR ${books.title} ILIKE ${containsPattern} ESCAPE '\\' OR ${books.author} ILIKE ${containsPattern} ESCAPE '\\')`;
+  return tokens.map((token) => `${token}:*`).join(" & ");
+};
+
+const titleAuthorSearchCondition = (query: string): SQL | null => {
+  const prefixQuery = toPrefixTsQuery(query);
+  if (!prefixQuery) {
+    return null;
+  }
+
+  return sql`to_tsvector('simple', ${books.title} || ' ' || ${books.author}) @@ to_tsquery('simple', ${prefixQuery})`;
 };
 
 const listBooksForUser = async (userId: string, input: ListBooksInput) => {
@@ -54,7 +65,10 @@ const listBooksForUser = async (userId: string, input: ListBooksInput) => {
   const conditions: SQL[] = [eq(books.userId, userId)];
 
   if (query) {
-    conditions.push(titleAuthorSearchCondition(query));
+    const searchCondition = titleAuthorSearchCondition(query);
+    if (searchCondition) {
+      conditions.push(searchCondition);
+    }
   }
 
   if (cursor) {
