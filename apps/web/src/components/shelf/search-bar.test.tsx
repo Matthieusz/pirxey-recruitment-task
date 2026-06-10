@@ -73,4 +73,22 @@ describe("SearchBar", () => {
 
     expect(screen.getByText("K")).toBeInTheDocument();
   });
+
+  it("shows a spinner when isSearching is true", () => {
+    const inputRef = createRef<HTMLInputElement>();
+    render(
+      <SearchBar
+        inputRef={inputRef}
+        isSearching
+        onChange={vi.fn()}
+        value="Tolkien"
+      />
+    );
+
+    expect(screen.queryByLabelText("Clear search")).toBeInTheDocument();
+    // The spinner replaces the search icon; the clear button remains.
+    expect(
+      screen.getByLabelText("Search books by title or author")
+    ).toBeInTheDocument();
+  });
 });

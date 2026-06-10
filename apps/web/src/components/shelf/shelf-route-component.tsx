@@ -80,17 +80,17 @@ export const ShelfRouteComponent = (): React.JSX.Element => {
       <div className="space-y-5 md:space-y-7">
         <SearchBar
           inputRef={searchInputRef}
+          isSearching={isSearching}
           onChange={setQuery}
           value={query}
         />
 
-        {isOwner && <AddBookForm onAdd={createBook.mutate} />}
+        {isOwner && <AddBookForm onAdd={createBook.mutateAsync} />}
 
         <BookList
           books={books}
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
-          isSearching={isSearching}
           newBookIds={newBookIds}
           onClearQuery={handleClearQuery}
           onLoadMore={fetchNextPage}

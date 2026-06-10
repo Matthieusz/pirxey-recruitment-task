@@ -1,7 +1,7 @@
 import type { Book } from "@pirxey-recruitment-task/api/validators/books";
 import { cn } from "@pirxey-recruitment-task/ui/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { LoaderCircle, SearchX } from "lucide-react";
+import { SearchX } from "lucide-react";
 import { useEffect, useEffectEvent, useRef } from "react";
 import type { CSSProperties } from "react";
 
@@ -157,7 +157,6 @@ interface BookListProps {
   readonly books: readonly Book[];
   readonly hasNextPage?: boolean;
   readonly isFetchingNextPage?: boolean;
-  readonly isSearching?: boolean;
   readonly minSearchLength?: number;
   readonly newBookIds: ReadonlySet<number>;
   readonly onClearQuery: () => void;
@@ -171,7 +170,6 @@ export const BookList = ({
   books,
   hasNextPage = false,
   isFetchingNextPage = false,
-  isSearching = false,
   minSearchLength = 1,
   newBookIds,
   onClearQuery,
@@ -231,21 +229,13 @@ export const BookList = ({
 
   return (
     <section aria-label="Book shelf" className="border-t border-hairline">
-      {(isSearching || isBelowMinimumSearchLength) && (
+      {isBelowMinimumSearchLength && (
         <div
           aria-live="polite"
           className="flex items-center gap-2 border-b border-hairline bg-page-edge/35 px-4 py-2 text-[0.8125rem] text-ink-muted"
         >
-          {isSearching && (
-            <LoaderCircle
-              aria-hidden="true"
-              className="size-3.5 animate-spin text-ink-soft"
-            />
-          )}
           <span>
-            {isBelowMinimumSearchLength
-              ? `Type at least ${minSearchLength} characters to search this shelf.`
-              : "Searching books…"}
+            Type at least {minSearchLength} characters to search this shelf.
           </span>
         </div>
       )}

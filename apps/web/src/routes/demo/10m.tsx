@@ -97,6 +97,7 @@ const Demo10MComponent = () => {
       <div className="space-y-5 md:space-y-7">
         <SearchBar
           inputRef={searchInputRef}
+          isSearching={isSearching}
           onChange={setQuery}
           value={query}
         />
@@ -105,7 +106,6 @@ const Demo10MComponent = () => {
           books={books}
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
-          isSearching={isSearching}
           minSearchLength={MIN_SEARCH_LENGTH}
           newBookIds={newBookIds}
           onClearQuery={handleClearQuery}

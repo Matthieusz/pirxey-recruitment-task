@@ -1,5 +1,5 @@
 import { cn } from "@pirxey-recruitment-task/ui/lib/utils";
-import { Search, X } from "lucide-react";
+import { LoaderCircle, Search, X } from "lucide-react";
 import type { RefObject } from "react";
 import { useEffect, useEffectEvent } from "react";
 
@@ -7,11 +7,17 @@ import { useIsMac } from "@/hooks/use-is-mac";
 
 interface SearchBarProps {
   readonly inputRef: RefObject<HTMLInputElement | null>;
+  readonly isSearching?: boolean;
   readonly onChange: (value: string) => void;
   readonly value: string;
 }
 
-export const SearchBar = ({ inputRef, onChange, value }: SearchBarProps) => {
+export const SearchBar = ({
+  inputRef,
+  isSearching = false,
+  onChange,
+  value,
+}: SearchBarProps) => {
   const isMac = useIsMac();
 
   const handleKeyDown = useEffectEvent((event: KeyboardEvent) => {
@@ -50,10 +56,17 @@ export const SearchBar = ({ inputRef, onChange, value }: SearchBarProps) => {
   return (
     <div aria-label="Search the shelf" className="block" role="search">
       <div className="relative">
-        <Search
-          aria-hidden="true"
-          className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-4 size-4 text-ink-soft"
-        />
+        {isSearching ? (
+          <LoaderCircle
+            aria-hidden="true"
+            className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-4 size-4 animate-spin text-ink-soft"
+          />
+        ) : (
+          <Search
+            aria-hidden="true"
+            className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-4 size-4 text-ink-soft"
+          />
+        )}
         <input
           aria-label="Search books by title or author"
           autoComplete="off"

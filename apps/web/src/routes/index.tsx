@@ -102,15 +102,15 @@ const HomeComponent = () => {
       <div className="space-y-5 md:space-y-7">
         <SearchBar
           inputRef={searchInputRef}
+          isSearching={isSearching}
           onChange={setQuery}
           value={query}
         />
-        <AddBookForm onAdd={createBook.mutate} />
+        <AddBookForm onAdd={createBook.mutateAsync} />
         <BookList
           books={books}
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
-          isSearching={isSearching}
           newBookIds={newBookIds}
           onClearQuery={handleClearQuery}
           onLoadMore={fetchNextPage}
