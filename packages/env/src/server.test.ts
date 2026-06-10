@@ -10,7 +10,7 @@ describe("server env", () => {
   });
 
   it("rejects when DATABASE_URL is missing", async () => {
-    vi.stubEnv("DATABASE_URL");
+    vi.stubEnv("DATABASE_URL", "");
     vi.stubEnv("BETTER_AUTH_SECRET", "s".repeat(32));
     vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3000");
     vi.stubEnv("CORS_ORIGIN", "http://localhost:3001");
