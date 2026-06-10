@@ -4,9 +4,9 @@ A private, durable record of books read.
 
 This project evolved from the [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack) scaffold into a focused book-tracking app with authenticated user shelves.
 
-**Demo:** The root route `/` displays a demo shelf with mock data (in-memory, resets on reload) and links to the 10M-row demo.  
+**Demo:** The root route `/` displays a shared PostgreSQL-backed demo shelf and links to the 10M-row demo.  
 **10M demo:** `/demo/10m` displays a seeded Postgres shelf with TanStack Virtual, cursor pagination, and indexed title/author search.  
-**User shelves:** Sign up at `/login` to create your own persistent shelf at `/shelf/<username>`.
+**User shelves:** Sign up at `/login` to create your own persistent shelf at `/shelf/<name>`.
 
 ---
 
@@ -75,7 +75,7 @@ VITE_SERVER_URL="http://localhost:3000"
 pnpm run db:push
 ```
 
-This creates all tables (user, session, account, verification, books).
+This enables the `pg_trgm` extension, then creates all tables and indexes (user, session, account, verification, books).
 
 ### 5. Optional: seed the 10M-row demo
 
@@ -105,12 +105,12 @@ pnpm run dev
 
 ## Routes
 
-| Path               | Auth   | Description                                              |
-| ------------------ | ------ | -------------------------------------------------------- |
-| `/`                | Public | Lightweight demo shelf with mock data and a 10M demo CTA |
-| `/demo/10m`        | Public | 10M-row Postgres demo with virtualized rendering/search  |
-| `/login`           | Public | Sign in / Sign up                                        |
-| `/shelf/$username` | Public | Read a user's shelf; add books if you're the owner       |
+| Path           | Auth   | Description                                             |
+| -------------- | ------ | ------------------------------------------------------- |
+| `/`            | Public | Shared PostgreSQL-backed demo shelf and a 10M demo CTA  |
+| `/demo/10m`    | Public | 10M-row Postgres demo with virtualized rendering/search |
+| `/login`       | Public | Sign in / Sign up                                       |
+| `/shelf/$name` | Public | Read a user's shelf; add books if you're the owner      |
 
 ---
 
@@ -147,7 +147,7 @@ pnpm run dev
 │   │       │   ├── login.tsx   # Sign in / Sign up
 │   │       │   ├── demo/10m.tsx # 10M row demo shelf
 │   │       │   └── shelf/
-│   │       │       └── $username.tsx  # User's persistent shelf
+│   │       │       └── $name.tsx  # User's persistent shelf
 │   │       ├── components/
 │   │       │   ├── header.tsx
 │   │       │   ├── user-menu.tsx
@@ -209,12 +209,12 @@ pnpm run dev
 - `bigserial` ID type is sufficient for 10M+ rows.
 - List endpoints use keyset cursor pagination with a capped page size instead of returning an entire shelf.
 - `BookList` uses TanStack Virtual so only visible rows are mounted in the browser.
-- Search uses PostgreSQL full-text search (`websearch_to_tsquery`) over title and author only, backed by a GIN expression index.
+- Search uses PostgreSQL full-text prefix search (`to_tsquery`) over title and author only, backed by a GIN expression index. Trigram GIN indexes on `title` and `author` are also provisioned via `pg_trgm` for future substring/fuzzy-search tuning.
 - Search input is debounced before server queries are issued.
 
 ### Notes for production scale
 
-- The GIN index makes title/author search viable at 10M rows, but very broad terms can still return many matches and require sorting by shelf order.
+- The GIN index makes title/author search viable at 10M rows. Very broad terms can still return many matches and require sorting by shelf order, so production should verify query plans with real data and tune indexes from `EXPLAIN ANALYZE`.
 - `COUNT(*)` is intentionally not run on every paged request; UI labels report loaded rows and `+` when another page exists.
 - A production deployment would add rate limiting, connection pooling/PgBouncer, and likely read replicas for public shelf traffic.
 
@@ -224,17 +224,19 @@ pnpm run dev
 
 1. **ISBN validation:** The API validates ISBN length (10 or 13 digits) but does not perform checksum verification (Luhn for ISBN-10, weighted sum for ISBN-13). A real app would validate the check digit.
 
-2. **Username enforcement:** Username uniqueness is enforced at the database level (unique constraint) and via Better-Auth's additional fields. The sign-up form validates character constraints but there's no dedicated API endpoint for checking username availability before submit.
+2. **Shelf name enforcement:** Shelf names use Better Auth's `user.name` field, which is unique in the database. The sign-up form validates character constraints but there's no dedicated API endpoint for checking name availability before submit.
 
-3. **Session user data:** The `username` field is available in the Better-Auth session via the `additionalFields` configuration. The frontend accesses it via `session.user.username` (cast). This works with the current Better-Auth version but may need adjustment on upgrade.
+3. **Session user data:** The frontend uses `session.user.name` as the public shelf slug. If display names and shelf slugs need to diverge later, add a separate immutable `slug` column.
 
 4. **No email verification:** Better-Auth's email verification plugin is not enabled. Users can sign up and immediately use the app without verifying their email.
 
 5. **No password reset:** There's no "forgot password" flow. Better-Auth supports it via a plugin.
 
-6. **Demo route:** The `/` route uses mock data (`apps/web/src/data/books-mock.ts`) and in-memory React state. All books added there are lost on page reload. This is intentional — it's a demo.
+6. **Demo route:** The `/` route uses a shared PostgreSQL demo user. Anyone running or visiting the local demo can add rows to that shared shelf. Reset it by clearing the demo user's rows from Postgres.
 
-7. **Testing:** Automated tests were not implemented within the scope of this task. The oRPC procedures and frontend components are structured to be testable: procedures accept typed inputs, validators are separated into their own module, and UI components accept callbacks.
+7. **Testing:** Automated tests cover API validators, book procedures, env validation, server routing, shelf UI components, rating input, search input, and debounce behavior. Current verification: `pnpm run test` and `pnpm run check-types` pass.
+
+8. **AI usage:** AI assistance was used to review and polish the implementation. Output was verified with automated tests, repository type checking, formatting checks, and direct code inspection against `task.md`.
 
 ---
 
