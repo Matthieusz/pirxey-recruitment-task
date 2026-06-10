@@ -76,7 +76,7 @@ describe("SearchBar", () => {
 
   it("shows a spinner when isSearching is true", () => {
     const inputRef = createRef<HTMLInputElement>();
-    render(
+    const { container } = render(
       <SearchBar
         inputRef={inputRef}
         isSearching
@@ -85,10 +85,7 @@ describe("SearchBar", () => {
       />
     );
 
+    expect(container.querySelector(".animate-spin")).toBeInTheDocument();
     expect(screen.queryByLabelText("Clear search")).toBeInTheDocument();
-    // The spinner replaces the search icon; the clear button remains.
-    expect(
-      screen.getByLabelText("Search books by title or author")
-    ).toBeInTheDocument();
   });
 });

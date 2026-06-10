@@ -1,4 +1,6 @@
 import { call } from "@orpc/server";
+import type { SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@pirxey-recruitment-task/env/server", () => ({
@@ -16,6 +18,18 @@ type Row = Record<string, unknown>;
 let insertResult: Row[] = [];
 let userQueryResult: Row[] = [];
 let booksQueryResult: Row[] = [];
+let limitValues: number[] = [];
+let whereConditions: (SQL | undefined)[] = [];
+
+const pgDialect = new PgDialect();
+
+const sqlToQuery = (condition: SQL | undefined) => {
+  if (!condition) {
+    throw new Error("Expected query condition to be defined.");
+  }
+
+  return pgDialect.sqlToQuery(condition);
+};
 
 const createChain = (terminalData: Row[] = []) => {
   const thenable = Promise.resolve(terminalData) as Promise<Row[]> & {
@@ -28,12 +42,18 @@ const createChain = (terminalData: Row[] = []) => {
 
   const ch: Record<string, unknown> = {
     from: vi.fn(() => ch),
-    limit: vi.fn(() => thenable),
+    limit: vi.fn((value: number) => {
+      limitValues.push(value);
+      return thenable;
+    }),
     onConflictDoNothing: vi.fn(() => Promise.resolve()),
     orderBy: vi.fn(() => ch),
     returning: vi.fn(() => returningThenable),
     values: vi.fn(() => ch),
-    where: vi.fn(() => ch),
+    where: vi.fn((condition: SQL | undefined) => {
+      whereConditions.push(condition);
+      return ch;
+    }),
   };
   return ch;
 };
@@ -123,8 +143,10 @@ const anonCtx = { auth: null as null, session: null };
 describe("booksRouter", () => {
   beforeEach(() => {
     insertResult = [];
+    limitValues = [];
     userQueryResult = [];
     booksQueryResult = [];
+    whereConditions = [];
     vi.clearAllMocks();
   });
 
@@ -266,6 +288,11 @@ describe("booksRouter", () => {
 
       expect(result.books).toHaveLength(1);
       expect(result.books[0]?.title).toBe("Foundation");
+
+      const query = sqlToQuery(whereConditions.at(-1));
+      expect(query.sql).toContain("to_tsvector");
+      expect(query.sql).toContain("to_tsquery");
+      expect(query.params).toEqual(["user-1", "Foundation:*"]);
     });
   });
 
@@ -323,6 +350,12 @@ describe("booksRouter", () => {
       expect(result?.books).toHaveLength(1);
       expect(result?.books[0]?.title).toBe("Dune");
       expect(result?.nextCursor).toBeNull();
+
+      const query = sqlToQuery(whereConditions.at(-1));
+      expect(query.sql).toContain("to_tsquery");
+      expect(query.sql).toContain('("books"."finished_at", "books"."id") <');
+      expect(query.params).toEqual(["user-9", "Dune:*", "2024-03-01", 42]);
+      expect(limitValues.at(-1)).toBe(26);
     });
   });
 });
