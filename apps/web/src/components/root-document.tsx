@@ -27,8 +27,15 @@ export const RootDocument = (): React.JSX.Element => (
           <Outlet />
         </div>
         <Toaster richColors />
-        <TanStackRouterDevtools position="bottom-left" />
-        <ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />
+        {import.meta.env.DEV ? (
+          <>
+            <TanStackRouterDevtools position="bottom-left" />
+            <ReactQueryDevtools
+              position="bottom"
+              buttonPosition="bottom-right"
+            />
+          </>
+        ) : null}
         <Scripts />
       </ThemeProvider>
     </body>
