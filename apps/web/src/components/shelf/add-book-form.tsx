@@ -18,7 +18,7 @@ import { RatingInput } from "./rating";
 export type { NewBookInput };
 
 interface AddBookFormProps {
-  readonly onAdd: (book: NewBookInput) => void;
+  readonly onAdd: (book: NewBookInput) => Promise<unknown> | unknown;
 }
 
 interface FormValues extends BookFormValues {
@@ -189,12 +189,12 @@ export const AddBookForm = ({ onAdd }: AddBookFormProps) => {
 
   const form = useForm({
     defaultValues,
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       const parsed = bookFormSchema.safeParse(value);
       if (!parsed.success) {
         return;
       }
-      onAdd(toNewBookInput(parsed.data));
+      await onAdd(toNewBookInput(parsed.data));
       collapseRef.current();
     },
     validators: {
