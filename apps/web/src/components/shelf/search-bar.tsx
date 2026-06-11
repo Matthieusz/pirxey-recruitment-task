@@ -54,7 +54,7 @@ export const SearchBar = ({
   };
 
   return (
-    <div aria-label="Search the shelf" className="block" role="search">
+    <search aria-label="Search the shelf" className="block">
       <div className="relative">
         {isSearching ? (
           <LoaderCircle
@@ -116,6 +116,6 @@ export const SearchBar = ({
           </button>
         )}
       </div>
-    </div>
+    </search>
   );
 };
